@@ -1,0 +1,70 @@
+.game-page {
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #2b1704 0%, #150a02 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.game-top-bar {
+  position: absolute;
+  top: 12px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.game-nav-btn {
+  background: rgba(255, 248, 220, 0.9);
+  border: 2px solid #8b4513;
+  color: #8b4513;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.game-nav-btn:hover {
+  background: #ff8f00;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 143, 0, 0.4);
+}
+
+.game-stage-tag {
+  color: #ffd700;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#game-container {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 143, 0, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 96vw;
+  max-height: 88vh;
+}
+
+#game-container canvas {
+  display: block;
+  border-radius: 12px;
+}

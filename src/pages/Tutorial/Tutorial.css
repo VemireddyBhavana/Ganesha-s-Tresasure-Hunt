@@ -1,0 +1,125 @@
+.tutorial {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(#fff3cd, #ffd54f, #ffb74d);
+  padding: 30px 20px;
+}
+
+.tutorial-card {
+  width: 720px;
+  max-width: 95%;
+  background: white;
+  border-radius: 24px;
+  padding: 35px 40px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  border: 2px solid #ffd54f;
+}
+
+.tutorial-card h1 {
+  text-align: center;
+  color: #8d4e00;
+  margin-bottom: 24px;
+  font-size: 32px;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.section h2 {
+  color: #d35400;
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.section p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #4e342e;
+}
+
+.controls-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.key-badge {
+  background: #f5f5f5;
+  border: 2px solid #ccc;
+  border-bottom: 4px solid #aaa;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+
+.or-text {
+  font-weight: 600;
+  color: #888;
+  margin: 0 6px;
+}
+
+.items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.item-pill {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5d4037;
+}
+
+.tutorial-action-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.tutorial-start-btn {
+  flex: 2;
+  padding: 16px;
+  border: none;
+  border-radius: 40px;
+  background: #ff6f00;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.tutorial-start-btn:hover {
+  background: #e65100;
+  transform: scale(1.03);
+}
+
+.tutorial-back-btn {
+  flex: 1;
+  padding: 16px;
+  border: 2px solid #ffb74d;
+  border-radius: 40px;
+  background: transparent;
+  color: #e65100;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.tutorial-back-btn:hover {
+  background: #fff3e0;
+}
