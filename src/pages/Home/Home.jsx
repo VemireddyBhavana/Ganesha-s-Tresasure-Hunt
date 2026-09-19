@@ -36,8 +36,8 @@ function Home() {
         <p>The Sacred Modak Quest</p>
 
         <div className="menu">
-          <button onClick={() => navigate("/story")}>
-            ▶ Start Adventure
+          <button onClick={() => navigate("/game")}>
+            ▶ Start Game
           </button>
           <button onClick={() => navigate("/story")}>
             📖 Story
@@ -71,6 +71,7 @@ function Home() {
 
                 {(() => {
                   const score = localStorage.getItem("ganesha_high_score");
+                  const playerName = localStorage.getItem("ganesha_last_player_name") || "Your Best";
                   const stars = parseInt(localStorage.getItem("ganesha_stars") || "0", 10);
                   const starsDisplay = "⭐".repeat(stars) + "☆".repeat(Math.max(0, 3 - stars));
                   if (!score) return null;
@@ -87,7 +88,7 @@ function Home() {
                       justifyContent: "space-between",
                       alignItems: "center"
                     }}>
-                      <span>✨ Your Best ({starsDisplay}):</span>
+                      <span>✨ {playerName} ({starsDisplay}):</span>
                       <span style={{ color: "#e65100", fontSize: "16px" }}>{score} pts</span>
                     </div>
                   );

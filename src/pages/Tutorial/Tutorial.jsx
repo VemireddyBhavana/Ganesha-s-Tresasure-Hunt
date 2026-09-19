@@ -29,6 +29,9 @@ function Tutorial() {
             <span className="key-badge">↓</span>
             <span className="key-badge">→</span>
           </div>
+          <p style={{ marginTop: "10px", fontSize: "14px", color: "#6d4c41" }}>
+            📱 On Mobile / Touch screens: Use the on-screen D-Pad or touch and drag to walk!
+          </p>
         </div>
 
         <div className="section">
@@ -43,8 +46,11 @@ function Tutorial() {
         </div>
 
         <div className="section">
-          <h2>🚧 Avoid Obstacles</h2>
-          <p>Stay away from rocks, slippery mud puddles, and plastic waste! Collisions reduce your lives.</p>
+          <h2>🌱 Eco-Seva & Obstacles</h2>
+          <p>
+            • 🪨 <strong>Rocks:</strong> Stay clear! Touching rocks knocks you back and costs 1 life.<br />
+            • 🧴 <strong>Plastic Waste:</strong> Clean up littered plastic for <strong>+20 Eco-Seva Bonus pts</strong>!
+          </p>
         </div>
 
         <div className="tutorial-action-buttons">

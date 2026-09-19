@@ -2,50 +2,79 @@ import Phaser from "phaser";
 import { saveScore } from "../../firebase/leaderboard";
 
 // ─────────────────────────────────────────────
-//  World dimensions
+//  World dimensions (Exact 1376:768 aspect ratio of temple_garden.png)
 // ─────────────────────────────────────────────
 const WORLD_W   = 2500;
-const WORLD_H   = 1500;
-const SPAWN_X   = 200;
-const SPAWN_Y   = 200;
-const TEMPLE_X  = 2200;
-const TEMPLE_Y  = 1250;
-const TIME_LIMIT = 120; // seconds
+const WORLD_H   = 1400;
+
+// Entrance gate step (top-left)
+const SPAWN_X   = 320;
+const SPAWN_Y   = 280;
+
+// Temple Courtyard Gate Arch (center-left of temple complex in artwork)
+const TEMPLE_GATE_X = 1120;
+const TEMPLE_GATE_Y = 890;
+
+// Temple Inner Sanctum Altar (top center of temple structure in artwork)
+const TEMPLE_SANCTUM_X = 1680;
+const TEMPLE_SANCTUM_Y = 520;
+
+const TIME_LIMIT = 120; // 2 minutes
 
 // ─────────────────────────────────────────────
-//  Collectible definitions (fixed path positions)
+//  Sacred Collectibles (Aligned along the paved pathways & lawns)
 // ─────────────────────────────────────────────
 const COLLECTIBLES = [
-  // 🌸 Flowers — right of spawn
-  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 500,  y: 400  },
-  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 700,  y: 300  },
-  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 950,  y: 380  },
-  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 1100, y: 250  },
-  // 🌿 Durva — mid section
-  { emoji: "🌿", texture: "durva",   color: 0x7cfc00, points: 15, x: 1250, y: 500  },
-  { emoji: "🌿", texture: "durva",   color: 0x7cfc00, points: 15, x: 1450, y: 420  },
-  { emoji: "🌿", texture: "durva",   color: 0x7cfc00, points: 15, x: 1650, y: 600  },
-  // 🍬 Modaks — vertical path south
-  { emoji: "🍬", texture: "modak",   color: 0xffa500, points: 20, x: 1250, y: 700  },
-  { emoji: "🍬", texture: "modak",   color: 0xffa500, points: 20, x: 1250, y: 900  },
-  { emoji: "🍬", texture: "modak",   color: 0xffa500, points: 20, x: 1350, y: 1050 },
-  // 🥥 Coconuts — lower strip
-  { emoji: "🥥", texture: "coconut", color: 0x8b4513, points: 25, x: 1600, y: 1250 },
-  { emoji: "🥥", texture: "coconut", color: 0x8b4513, points: 25, x: 1800, y: 1250 },
-  { emoji: "🥥", texture: "coconut", color: 0x8b4513, points: 25, x: 2000, y: 1300 },
-  // 🪔 Diyas — near temple
-  { emoji: "🪔", texture: "diya",    color: 0xffd700, points: 30, x: 2050, y: 1150 },
-  { emoji: "🪔", texture: "diya",    color: 0xffd700, points: 30, x: 2150, y: 1050 },
-];
-// Max score = 280 pts
+  // 🌸 Flowers — Entrance walkway & flowerbeds
+  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 450,  y: 420  },
+  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 640,  y: 500  },
+  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 790,  y: 560  },
+  { emoji: "🌸", texture: "flower",  color: 0xff69b4, points: 10, x: 540,  y: 740  },
 
-// Rock positions (deliberately placed on paths to create challenge)
+  // 🌿 Durva Grass — Green lawns & stone benches
+  { emoji: "🌿", texture: "durva",   color: 0x7cfc00, points: 15, x: 380,  y: 920  },
+  { emoji: "🌿", texture: "durva",   color: 0x7cfc00, points: 15, x: 520,  y: 1140 },
+  { emoji: "🌿", texture: "durva",   color: 0x7cfc00, points: 15, x: 840,  y: 1200 },
+  { emoji: "🌿", texture: "durva",   color: 0x7cfc00, points: 15, x: 1060, y: 1120 },
+
+  // 🍬 Sacred Modaks — Middle paved pathway approaching the temple
+  { emoji: "🍬", texture: "modak",   color: 0xffa500, points: 20, x: 720,  y: 840  },
+  { emoji: "🍬", texture: "modak",   color: 0xffa500, points: 20, x: 940,  y: 960  },
+  { emoji: "🍬", texture: "modak",   color: 0xffa500, points: 20, x: 1080, y: 1000 },
+  { emoji: "🍬", texture: "modak",   color: 0xffa500, points: 20, x: 1320, y: 1020 },
+
+  // 🥥 Fresh Coconuts — South path near palm trees
+  { emoji: "🥥", texture: "coconut", color: 0x8b4513, points: 25, x: 1560, y: 1220 },
+  { emoji: "🥥", texture: "coconut", color: 0x8b4513, points: 25, x: 1860, y: 1180 },
+  { emoji: "🥥", texture: "coconut", color: 0x8b4513, points: 25, x: 2120, y: 1040 },
+
+  // 🪔 Aarti Diyas — Sacred parikrama & sanctum approach
+  { emoji: "🪔", texture: "diya",    color: 0xffd700, points: 30, x: 1420, y: 960  },
+  { emoji: "🪔", texture: "diya",    color: 0xffd700, points: 30, x: 2180, y: 800  },
+  { emoji: "🪔", texture: "diya",    color: 0xffd700, points: 30, x: 1960, y: 580  },
+];
+
+// ─────────────────────────────────────────────
+//  Eco-Seva: Plastic Waste to Clean Up
+// ─────────────────────────────────────────────
+const PLASTIC_WASTE_SPOTS = [
+  { x: 300,  y: 600  },
+  { x: 600,  y: 1040 },
+  { x: 1200, y: 1240 },
+  { x: 1720, y: 1140 },
+];
+
+// ─────────────────────────────────────────────
+//  Obstacle Rocks (Placed along path borders)
+// ─────────────────────────────────────────────
 const ROCK_SPOTS = [
-  { x: 600,  y: 350, r: 20 }, { x: 850,  y: 280, r: 18 },
-  { x: 1050, y: 460, r: 22 }, { x: 1300, y: 320, r: 19 },
-  { x: 1250, y: 620, r: 21 }, { x: 1450, y: 750, r: 18 },
-  { x: 1550, y: 1100,r: 20 }, { x: 1900, y: 1200,r: 22 },
-  { x: 2100, y: 1000,r: 19 }, { x: 2250, y: 1150,r: 18 },
+  { x: 510,  y: 470,  r: 18 },
+  { x: 680,  y: 680,  r: 18 },
+  { x: 420,  y: 1000, r: 20 },
+  { x: 960,  y: 1160, r: 18 },
+  { x: 1480, y: 1100, r: 20 },
+  { x: 2020, y: 1160, r: 18 },
+  { x: 2120, y: 700,  r: 18 },
 ];
 
 // ─────────────────────────────────────────────
@@ -95,40 +124,38 @@ class SoundFX {
       this.bgmPlaying = true;
       const now = this.ctx.currentTime;
 
-      // Master BGM gain
       this.bgmGain = this.ctx.createGain();
       this.bgmGain.gain.setValueAtTime(0.001, now);
-      this.bgmGain.gain.linearRampToValueAtTime(0.09, now + 1.2);
+      this.bgmGain.gain.linearRampToValueAtTime(0.08, now + 1.2);
       this.bgmGain.connect(this.masterGain);
 
-      // Warm lowpass filter
       const filter = this.ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(360, now);
+      filter.frequency.setValueAtTime(380, now);
       filter.Q.setValueAtTime(2.0, now);
       filter.connect(this.bgmGain);
 
-      // Drone 1: Root D3 (146.83 Hz) with subtle harmonic warmth
+      // Drone 1: Root D3 (146.83 Hz)
       this.bgmOsc1 = this.ctx.createOscillator();
       this.bgmOsc1.type = "sawtooth";
       this.bgmOsc1.frequency.setValueAtTime(146.83, now);
       const osc1Gain = this.ctx.createGain();
-      osc1Gain.gain.setValueAtTime(0.3, now);
+      osc1Gain.gain.setValueAtTime(0.25, now);
       this.bgmOsc1.connect(osc1Gain);
       osc1Gain.connect(filter);
       this.bgmOsc1.start(now);
 
-      // Drone 2: Fifth A3 (220.0 Hz) pure sine
+      // Drone 2: Fifth A3 (220.0 Hz)
       this.bgmOsc2 = this.ctx.createOscillator();
       this.bgmOsc2.type = "sine";
       this.bgmOsc2.frequency.setValueAtTime(220.00, now);
       const osc2Gain = this.ctx.createGain();
-      osc2Gain.gain.setValueAtTime(0.25, now);
+      osc2Gain.gain.setValueAtTime(0.2, now);
       this.bgmOsc2.connect(osc2Gain);
       osc2Gain.connect(this.bgmGain);
       this.bgmOsc2.start(now);
 
-      // Devotional Melody Bells (Raag Bhupali pentatonic: D4, E4, F#4, A4, B4, D5)
+      // Devotional Melody Chimes (Raga Bhupali: D4, E4, F#4, A4, B4, D5)
       const ragaNotes = [293.66, 329.63, 369.99, 440.00, 493.88, 587.33];
       const playChime = () => {
         if (!this.bgmPlaying || !this.ctx) return;
@@ -139,12 +166,12 @@ class SoundFX {
           const g = this.ctx.createGain();
           osc.type = "sine";
           osc.frequency.setValueAtTime(note, t);
-          g.gain.setValueAtTime(0.045, t);
-          g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+          g.gain.setValueAtTime(0.04, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
           osc.connect(g);
           g.connect(this.masterGain);
           osc.start(t);
-          osc.stop(t + 2.4);
+          osc.stop(t + 2.2);
         } catch (e) {}
       };
 
@@ -163,11 +190,11 @@ class SoundFX {
     try {
       if (this.bgmGain && this.ctx) {
         const now = this.ctx.currentTime;
-        this.bgmGain.gain.linearRampToValueAtTime(0.001, now + 0.6);
+        this.bgmGain.gain.linearRampToValueAtTime(0.001, now + 0.5);
         setTimeout(() => {
           if (this.bgmOsc1) { try { this.bgmOsc1.stop(); this.bgmOsc1.disconnect(); } catch (e) {} this.bgmOsc1 = null; }
           if (this.bgmOsc2) { try { this.bgmOsc2.stop(); this.bgmOsc2.disconnect(); } catch (e) {} this.bgmOsc2 = null; }
-        }, 700);
+        }, 600);
       }
     } catch (e) {}
   }
@@ -182,24 +209,42 @@ class SoundFX {
       osc.type = "sine";
       osc.frequency.setValueAtTime(587.33, now); // D5
       osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
-      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.setValueAtTime(0.2, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc.connect(gain);
       gain.connect(this.masterGain);
       osc.start(now);
       osc.stop(now + 0.35);
 
-      // Shimmer overtone
       const chime = this.ctx.createOscillator();
       const chimeG = this.ctx.createGain();
       chime.type = "triangle";
       chime.frequency.setValueAtTime(1174.66, now + 0.05); // D6
-      chimeG.gain.setValueAtTime(0.09, now + 0.05);
-      chimeG.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+      chimeG.gain.setValueAtTime(0.08, now + 0.05);
+      chimeG.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
       chime.connect(chimeG);
       chimeG.connect(this.masterGain);
       chime.start(now + 0.05);
-      chime.stop(now + 0.42);
+      chime.stop(now + 0.4);
+    } catch (e) {}
+  }
+
+  playEcoClean() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // E5
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.3);
     } catch (e) {}
   }
 
@@ -211,14 +256,14 @@ class SoundFX {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(160, now);
-      osc.frequency.exponentialRampToValueAtTime(45, now + 0.25);
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.22);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
       osc.connect(gain);
       gain.connect(this.masterGain);
       osc.start(now);
-      osc.stop(now + 0.25);
+      osc.stop(now + 0.22);
     } catch (e) {}
   }
 
@@ -233,7 +278,7 @@ class SoundFX {
         const gain = this.ctx.createGain();
         osc.type = "sine";
         osc.frequency.setValueAtTime(f, now);
-        const vol = 0.16 / (i + 1);
+        const vol = 0.15 / (i + 1);
         gain.gain.setValueAtTime(vol, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
         osc.connect(gain);
@@ -255,12 +300,12 @@ class SoundFX {
         const g = this.ctx.createGain();
         osc.type = i === 0 ? "triangle" : "sine";
         osc.frequency.setValueAtTime(f, now);
-        g.gain.setValueAtTime(0.18 / (i + 1), now);
-        g.gain.exponentialRampToValueAtTime(0.0005, now + 2.8);
+        g.gain.setValueAtTime(0.16 / (i + 1), now);
+        g.gain.exponentialRampToValueAtTime(0.0005, now + 2.6);
         osc.connect(g);
         g.connect(this.masterGain);
         osc.start(now);
-        osc.stop(now + 2.8);
+        osc.stop(now + 2.6);
       });
     } catch (e) {}
   }
@@ -270,7 +315,6 @@ class SoundFX {
       this.init();
       if (!this.ctx) return;
       const now = this.ctx.currentTime;
-      // Celebratory ascending fanfare
       const fanfare = [
         { f: 293.66, t: 0.0, d: 0.3 },
         { f: 369.99, t: 0.18, d: 0.3 },
@@ -304,7 +348,7 @@ class SoundFX {
       osc.type = "sine";
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(220, now + 0.06);
-      g.gain.setValueAtTime(0.12, now);
+      g.gain.setValueAtTime(0.1, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
       osc.connect(g);
       g.connect(this.masterGain);
@@ -323,27 +367,32 @@ export default class Level1Scene extends Phaser.Scene {
   //  CREATE
   // ═══════════════════════════════════════════
   create() {
-    // ── Audio Synthesizer ──
     this.soundFX = new SoundFX();
 
-    // ── State ──
+    // Game state
     this.score          = 0;
     this.collected      = 0;
     this.totalItems     = COLLECTIBLES.length;
+    this.ecoCleaned     = 0;
     this.lives          = 3;
     this.timeLeft       = TIME_LIMIT;
     this.allCollected   = false;
     this.gameOver       = false;
     this.levelComplete  = false;
-    this.isInvincible   = false; // brief invincibility after rock hit
+    this.isInvincible   = false;
+    this.isGamePaused   = false;
 
-    // Per-type mission tracker (counts derived from COLLECTIBLES array)
+    // Virtual joystick / touch steering state
+    this.touchVector = { x: 0, y: 0 };
+    this.isTouchActive = false;
+
+    // Tracker per offering type
     this.tracker = {
-      "🌸": { label: "🌸 Flowers",  count: 0, total: 0, textObj: null },
-      "🌿": { label: "🌿 Durva",    count: 0, total: 0, textObj: null },
-      "🍬": { label: "🍬 Modak",    count: 0, total: 0, textObj: null },
-      "🥥": { label: "🥥 Coconut",  count: 0, total: 0, textObj: null },
-      "🪔": { label: "🪔 Diya",     count: 0, total: 0, textObj: null },
+      "🌸": { label: "🌸 Flowers",  count: 0, total: 0, badgeObj: null },
+      "🌿": { label: "🌿 Durva",    count: 0, total: 0, badgeObj: null },
+      "🍬": { label: "🍬 Modak",    count: 0, total: 0, badgeObj: null },
+      "🥥": { label: "🥥 Coconut",  count: 0, total: 0, badgeObj: null },
+      "🪔": { label: "🪔 Diya",     count: 0, total: 0, badgeObj: null },
     };
     COLLECTIBLES.forEach(item => { this.tracker[item.emoji].total++; });
 
@@ -352,112 +401,98 @@ export default class Level1Scene extends Phaser.Scene {
     // ─────────────────────────────────────
     this.cameras.main.setBackgroundColor("#87CEEB");
 
-    // Replace background with beautiful AI-generated Temple Garden
-    this.add.image(1250, 750, "temple").setDisplaySize(2500, 1500);
+    // Clean, authentic hand-drawn Temple Garden background
+    this.add.image(WORLD_W / 2, WORLD_H / 2, "temple_garden_bg")
+      .setDisplaySize(WORLD_W, WORLD_H)
+      .setDepth(0);
 
     // ─────────────────────────────────────
-    //  TREES (Sprites with soft shadows)
+    //  NATURAL BOUNDARY COLLIDERS
     // ─────────────────────────────────────
-    const TREE_POSITIONS = [
-      { x: 200, y: 150 }, { x: 550, y: 120 }, { x: 950, y: 160 },
-      { x: 1400,y: 130 }, { x: 1900,y: 140 }, { x: 2350,y: 170 },
-      { x: 300, y: 500 }, { x: 750, y: 600 }, { x: 1200,y: 450 },
-      { x: 1650,y: 550 }, { x: 2100,y: 480 }, { x: 120, y: 900 },
-      { x: 600, y:1050 }, { x: 1100,y: 950 }, { x: 1700,y:1000 },
-      { x: 400, y:1300 }, { x: 900, y:1350 }, { x: 1350,y:1200 },
-      { x: 2000,y:1350 },
-    ];
+    this.boundaryGroup = this.physics.add.staticGroup();
 
-    TREE_POSITIONS.forEach(({ x, y }) => {
-      // Tree shadow
-      this.add.ellipse(x, y + 42, 64, 22, 0x000000, 0.22);
-      if (this.textures.exists("tree")) {
-        const treeSprite = this.add.image(x, y, "tree");
-        treeSprite.setScale(0.5);
-      } else {
-        // Fallback procedural tree
-        this.add.rectangle(x, y + 22, 14, 28, 0x6b3a1f);
-        this.add.circle(x, y, 38, 0x1a7a1a);
-      }
-    });
+    // Lotus Pond boundary (devotee cannot walk onto pond water)
+    const lotusPond = this.add.rectangle(1680, 1120, 360, 150, 0x000000, 0);
+    this.physics.add.existing(lotusPond, true);
+    this.boundaryGroup.add(lotusPond);
+
+    // Temple outer boundary courtyard walls (before gate opens)
+    // Left wall of temple
+    const templeLeftWall = this.add.rectangle(950, 800, 32, 220, 0x000000, 0);
+    this.physics.add.existing(templeLeftWall, true);
+    this.boundaryGroup.add(templeLeftWall);
+
+    // Front wall left wing
+    const templeFrontWallLeft = this.add.rectangle(1020, 890, 120, 28, 0x000000, 0);
+    this.physics.add.existing(templeFrontWallLeft, true);
+    this.boundaryGroup.add(templeFrontWallLeft);
+
+    // Front wall right wing
+    const templeFrontWallRight = this.add.rectangle(1220, 890, 80, 28, 0x000000, 0);
+    this.physics.add.existing(templeFrontWallRight, true);
+    this.boundaryGroup.add(templeFrontWallRight);
 
     // ─────────────────────────────────────
-    //  ROCKS (physics obstacles with sprites)
+    //  ROCKS (Static Obstacles with Knockback)
     // ─────────────────────────────────────
     this.rocksGroup = this.physics.add.staticGroup();
-
     ROCK_SPOTS.forEach(({ x, y, r }) => {
-      // Soft ground shadow
-      this.add.ellipse(x, y + r * 0.7, r * 2.2, r * 0.9, 0x000000, 0.25);
-
-      const rock = this.physics.add.staticImage(x, y, "rock");
-      rock.setScale(0.25);
+      this.add.ellipse(x, y + r * 0.6, r * 2.2, r * 0.8, 0x000000, 0.25).setDepth(20);
+      const rock = this.physics.add.staticImage(x, y, "rock").setDepth(25);
+      rock.setScale(0.24);
+      rock.body.setSize(30, 24);
       this.rocksGroup.add(rock);
     });
     this.rocksGroup.refresh();
 
     // ─────────────────────────────────────
-    //  SACRED TEMPLE & GATE
+    //  ECO-SEVA PLASTIC WASTE (Clean-up Items)
     // ─────────────────────────────────────
-    // Soft shadow under temple
-    this.add.ellipse(TEMPLE_X, TEMPLE_Y + 70, 240, 60, 0x000000, 0.28);
+    this.ecoGroup = this.physics.add.staticGroup();
+    PLASTIC_WASTE_SPOTS.forEach(({ x, y }) => {
+      this.add.ellipse(x, y + 8, 22, 10, 0x000000, 0.2).setDepth(30);
+      const waste = this.physics.add.image(x, y, "plastic_waste").setDepth(35);
+      waste.setScale(0.28);
+      this.physics.add.existing(waste, true);
 
-    // Temple Sprite / Graphic
-    if (this.textures.exists("shrine")) {
-      const shrineImg = this.add.image(TEMPLE_X, TEMPLE_Y, "shrine");
-      shrineImg.setDisplaySize(240, 240);
-    } else {
-      this.add.rectangle(TEMPLE_X, 1340, 220, 20, 0xd4a017);
-      this.add.rectangle(TEMPLE_X, TEMPLE_Y, 180, 160, 0xffd700);
-      this.add.text(TEMPLE_X - 58, 1185, "🛕", { fontSize: "56px" });
-    }
+      // Gentle floating alert pulse
+      this.tweens.add({
+        targets: waste,
+        angle: 8,
+        yoyo: true,
+        repeat: -1,
+        duration: 900,
+      });
 
-    this.add.text(TEMPLE_X, TEMPLE_Y + 120, "🛕 Sacred Temple", {
-      fontSize: "18px", color: "#5c3a00", fontStyle: "bold",
-      backgroundColor: "#fff8e1ee", padding: { x: 12, y: 5 }
-    }).setOrigin(0.5);
-
-    // Gate: red bar across temple entrance
-    this.gateBar = this.add.rectangle(TEMPLE_X, 1155, 200, 16, 0xff2222);
-    this.physics.add.existing(this.gateBar, true);
-    this.gateBar.body.setSize(200, 16);
-
-    // Gate label
-    this.gateLockText = this.add.text(TEMPLE_X, 1125, "🔒 Collect all offerings first!", {
-      fontSize: "14px", color: "#cc0000", fontStyle: "bold",
-      backgroundColor: "#ffffffcc", padding: { x: 6, y: 3 },
-    }).setOrigin(0.5);
+      this.ecoGroup.add(waste);
+    });
+    this.ecoGroup.refresh();
 
     // ─────────────────────────────────────
-    //  COLLECTIBLES (Shadows + Floating + Glow)
+    //  SACRED OFFERINGS (Shadows, Glow, Float)
     // ─────────────────────────────────────
     this.collectiblesGroup = this.physics.add.staticGroup();
-
     COLLECTIBLES.forEach((item) => {
-      // 1. Soft ground shadow under collectible
       const shadow = this.add.ellipse(item.x, item.y + 14, 28, 12, 0x000000, 0.28).setDepth(45);
-
-      // 2. Pulsing glow aura
       const glow = this.add.circle(item.x, item.y, 22, item.color, 0.25).setDepth(48);
       this.tweens.add({
-        targets: glow, scaleX: 1.35, scaleY: 1.35, alpha: 0.12,
+        targets: glow,
+        scaleX: 1.35, scaleY: 1.35, alpha: 0.12,
         duration: 900 + Phaser.Math.Between(0, 300),
         yoyo: true, repeat: -1, ease: "Sine.easeInOut",
       });
 
-      // 3. Real sprite for collectible with gentle floating bob
-      const flower = this.physics.add.image(item.x, item.y, item.texture).setDepth(50);
-      flower.setScale(0.24);
-      this.physics.add.existing(flower, true);
+      const sprite = this.physics.add.image(item.x, item.y, item.texture).setDepth(50);
+      sprite.setScale(0.24);
+      this.physics.add.existing(sprite, true);
 
       this.tweens.add({
-        targets: flower,
+        targets: sprite,
         y: item.y - 7,
         duration: 850 + Phaser.Math.Between(0, 300),
         yoyo: true, repeat: -1, ease: "Sine.easeInOut",
       });
 
-      // Shadow breathes along with float
       this.tweens.add({
         targets: shadow,
         scaleX: 0.85, scaleY: 0.85, alpha: 0.18,
@@ -465,7 +500,6 @@ export default class Level1Scene extends Phaser.Scene {
         yoyo: true, repeat: -1, ease: "Sine.easeInOut",
       });
 
-      // 4. Emoji label above
       const label = this.add.text(item.x, item.y - 28, item.emoji, {
         fontSize: "18px",
       }).setOrigin(0.5).setDepth(55);
@@ -477,105 +511,105 @@ export default class Level1Scene extends Phaser.Scene {
         yoyo: true, repeat: -1, ease: "Sine.easeInOut",
       });
 
-      // Metadata for collection & proximity
-      flower.pointValue = item.points;
-      flower.itemEmoji  = item.emoji;
-      flower.glowRef    = glow;
-      flower.labelRef   = label;
-      flower.shadowRef  = shadow;
+      sprite.pointValue = item.points;
+      sprite.itemEmoji  = item.emoji;
+      sprite.glowRef    = glow;
+      sprite.labelRef   = label;
+      sprite.shadowRef  = shadow;
 
-      this.collectiblesGroup.add(flower);
+      this.collectiblesGroup.add(sprite);
     });
     this.collectiblesGroup.refresh();
 
     // ─────────────────────────────────────
-    //  ANIMATIONS (Walking & Idle 20-frame Spritesheet)
+    //  TEMPLE COURTYARD GATE & WIN ZONE
+    // ─────────────────────────────────────
+    // Sacred Toran / Gate Bar across the courtyard archway
+    this.gateBar = this.add.rectangle(TEMPLE_GATE_X, TEMPLE_GATE_Y, 130, 20, 0xd84315, 0.9).setDepth(90);
+    this.gateBar.setStrokeStyle(3, 0xffd700);
+    this.physics.add.existing(this.gateBar, true);
+
+    this.gateLockText = this.add.text(TEMPLE_GATE_X, TEMPLE_GATE_Y - 26, "🔒 Gather 18 Offerings to Enter", {
+      fontSize: "13px", color: "#ffffff", fontStyle: "bold",
+      backgroundColor: "#b71c1cee", padding: { x: 8, y: 4 },
+    }).setOrigin(0.5).setDepth(95);
+
+    // Sanctum Win Zone inside the inner temple court
+    const templeWinZone = this.add.zone(TEMPLE_SANCTUM_X, TEMPLE_SANCTUM_Y, 190, 160);
+    this.physics.add.existing(templeWinZone, true);
+    this.physics.add.overlap(
+      this.player || null, templeWinZone, this.onReachTemple, null, this
+    );
+    this.templeWinZone = templeWinZone;
+
+    // ─────────────────────────────────────
+    //  ANIMATIONS (Walking & Idle)
     // ─────────────────────────────────────
     if (!this.anims.exists("walk-down")) {
       this.anims.create({
         key: "walk-down",
         frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
-        frameRate: 8,
-        repeat: -1,
+        frameRate: 8, repeat: -1,
       });
     }
     if (!this.anims.exists("walk-left")) {
       this.anims.create({
         key: "walk-left",
         frames: this.anims.generateFrameNumbers("player", { start: 4, end: 7 }),
-        frameRate: 8,
-        repeat: -1,
+        frameRate: 8, repeat: -1,
       });
     }
     if (!this.anims.exists("walk-right")) {
       this.anims.create({
         key: "walk-right",
         frames: this.anims.generateFrameNumbers("player", { start: 8, end: 11 }),
-        frameRate: 8,
-        repeat: -1,
+        frameRate: 8, repeat: -1,
       });
     }
     if (!this.anims.exists("walk-up")) {
       this.anims.create({
         key: "walk-up",
         frames: this.anims.generateFrameNumbers("player", { start: 12, end: 15 }),
-        frameRate: 8,
-        repeat: -1,
+        frameRate: 8, repeat: -1,
       });
     }
     if (!this.anims.exists("idle")) {
       this.anims.create({
         key: "idle",
         frames: this.anims.generateFrameNumbers("player", { start: 16, end: 19 }),
-        frameRate: 4,
-        repeat: -1,
+        frameRate: 4, repeat: -1,
       });
     }
 
     // ─────────────────────────────────────
-    //  PLAYER (Upgraded Scale 1.35x & Animated Spritesheet)
+    //  PLAYER DEVOTEE SPRITE
     // ─────────────────────────────────────
-    this.player = this.physics.add.sprite(200, 200, "player");
+    this.player = this.physics.add.sprite(SPAWN_X, SPAWN_Y, "player");
     this.player.setScale(1.35);
     this.player.body.setCollideWorldBounds(true);
-    this.player.body.setSize(26, 28);
-    this.player.body.setOffset(19, 32);
+    this.player.body.setSize(24, 26);
+    this.player.body.setOffset(20, 34);
     this.player.setDepth(150);
     this.player.anims.play("idle", true);
     this._lastDir = "down";
 
-    // ─────────────────────────────────────
-    //  PHYSICS EVENTS
-    // ─────────────────────────────────────
-    // Collect items
-    this.physics.add.overlap(
-      this.player, this.collectiblesGroup, this.onCollect, null, this
-    );
-    // Rock collision
-    this.physics.add.collider(
-      this.player, this.rocksGroup, this.onHitRock, null, this
-    );
-    // Temple gate collision (blocks until opened)
-    this.gateCollider = this.physics.add.collider(
-      this.player, this.gateBar
-    );
+    // Re-bind win zone overlap now that player exists
+    this.physics.add.overlap(this.player, this.templeWinZone, this.onReachTemple, null, this);
 
-    // Temple zone (win condition — overlap with temple body)
-    const templeZone = this.add.zone(TEMPLE_X, TEMPLE_Y, 200, 180);
-    this.physics.add.existing(templeZone, true);
-    this.physics.add.overlap(
-      this.player, templeZone, this.onReachTemple, null, this
-    );
+    // Physics events
+    this.physics.add.overlap(this.player, this.collectiblesGroup, this.onCollect, null, this);
+    this.physics.add.overlap(this.player, this.ecoGroup, this.onCleanEco, null, this);
+    this.physics.add.collider(this.player, this.boundaryGroup);
+    this.physics.add.collider(this.player, this.rocksGroup, this.onHitRock, null, this);
+    this.gateCollider = this.physics.add.collider(this.player, this.gateBar);
 
-    // ─────────────────────────────────────
-    //  PHYSICS & CAMERA
-    // ─────────────────────────────────────
+    // Physics & Camera Bounds
     this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
     this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
     // ─────────────────────────────────────
-    //  KEYBOARD & INPUT
+    //  KEYBOARD & INPUT CONTROLS
     // ─────────────────────────────────────
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys({
@@ -585,11 +619,10 @@ export default class Level1Scene extends Phaser.Scene {
       D: Phaser.Input.Keyboard.KeyCodes.D,
     });
 
-    // ESC key for pause
     this.keyEsc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
     this.keyEsc.on("down", () => this.togglePause());
 
-    // Debug hotkeys: 'U' for Unlock Gate, 'V' for Victory
+    // Debug hotkeys
     const keyU = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.U);
     keyU.on("down", () => {
       this.collected = this.totalItems;
@@ -601,27 +634,6 @@ export default class Level1Scene extends Phaser.Scene {
       this.onReachTemple();
     });
 
-    // Expose scene globally for dev & verification
-    window.__level1Scene = this;
-
-    // Automated query param triggers for previewing cinematic
-    if (typeof window !== "undefined" && window.location.search) {
-      if (window.location.search.includes("unlock=true")) {
-        this.time.delayedCall(1200, () => {
-          this.collected = this.totalItems;
-          this.openTempleGate();
-        });
-      } else if (window.location.search.includes("win=true")) {
-        this.time.delayedCall(1200, () => {
-          this.collected = this.totalItems;
-          this.openTempleGate();
-          this.time.delayedCall(6500, () => {
-            this.onReachTemple();
-          });
-        });
-      }
-    }
-
     // Start background music on user click or touch
     this.input.on("pointerdown", () => {
       if (!this.soundFX.bgmPlaying && !this.soundFX.isMuted) {
@@ -629,9 +641,32 @@ export default class Level1Scene extends Phaser.Scene {
       }
     });
 
-    // ─────────────────────────────────────
-    //  TIMER EVENT (every 1 second)
-    // ─────────────────────────────────────
+    // Tap/drag on screen to steer player (mobile / mouse friendly)
+    this.input.on("pointermove", (pointer) => {
+      if (pointer.isDown && !this.isGamePaused && !this.gameOver && !this.levelComplete) {
+        // Only steer if pointer is in world canvas, not clicking HUD buttons
+        if (pointer.y > 100) {
+          const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+          const dx = worldPoint.x - this.player.x;
+          const dy = worldPoint.y - this.player.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > 25) {
+            this.touchVector = { x: dx / dist, y: dy / dist };
+            this.isTouchActive = true;
+          } else {
+            this.touchVector = { x: 0, y: 0 };
+            this.isTouchActive = false;
+          }
+        }
+      }
+    });
+
+    this.input.on("pointerup", () => {
+      this.isTouchActive = false;
+      this.touchVector = { x: 0, y: 0 };
+    });
+
+    // Timer Event (every second)
     this.timerEvent = this.time.addEvent({
       delay: 1000,
       callback: this.onTick,
@@ -640,15 +675,13 @@ export default class Level1Scene extends Phaser.Scene {
     });
 
     // ─────────────────────────────────────
-    //  COMPETITION HUD (Top Bar Glassmorphism)
+    //  HUD: TOP BAR GLASSMORPHISM
     // ─────────────────────────────────────
-    this.isGamePaused = false;
-
-    // 0. Top-Left Navigation (In-game Home button)
+    // 0. In-game Home button
     this.hudHomeBtn = this.add.text(64, 22, "⬅ HOME", {
       fontSize: "13px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#3e2723", padding: { x: 10, y: 5 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
     this.hudHomeBtn.on("pointerdown", () => {
       this.soundFX.stopBGM();
       window.dispatchEvent(new CustomEvent("nav-home"));
@@ -656,8 +689,8 @@ export default class Level1Scene extends Phaser.Scene {
     this.hudHomeBtn.on("pointerover", () => this.hudHomeBtn.setStyle({ color: "#ffd700", backgroundColor: "#5d4037" }));
     this.hudHomeBtn.on("pointerout", () => this.hudHomeBtn.setStyle({ color: "#ffffff", backgroundColor: "#3e2723" }));
 
-    // 1. Top-Left Player Vitals Card
-    this.add.rectangle(126, 92, 224, 94, 0x1d1007, 0.90)
+    // 1. Top-Left Vitals Card
+    this.add.rectangle(126, 92, 224, 94, 0x1d1007, 0.92)
       .setStrokeStyle(2, 0xffd700, 0.9)
       .setScrollFactor(0).setDepth(200);
 
@@ -676,12 +709,12 @@ export default class Level1Scene extends Phaser.Scene {
     }).setScrollFactor(0).setDepth(201);
 
     // 2. Top-Center Offerings Quest Dock
-    const dockW = 500;
+    const dockW = 540;
     const dockH = 82;
     const dockX = this.scale.width / 2;
     const dockY = 53;
 
-    this.add.rectangle(dockX, dockY, dockW, dockH, 0x1d1007, 0.90)
+    this.add.rectangle(dockX, dockY, dockW, dockH, 0x1d1007, 0.92)
       .setStrokeStyle(2, 0xffd700, 0.9)
       .setScrollFactor(0).setDepth(200);
 
@@ -691,52 +724,44 @@ export default class Level1Scene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
     const TRACKER_ORDER = ["🌸", "🌿", "🍬", "🥥", "🪔"];
-    const badgeSpacing = 92;
-    const startX = dockX - 184;
+    const badgeSpacing = 100;
+    const startX = dockX - 200;
 
     TRACKER_ORDER.forEach((emoji, idx) => {
       const t = this.tracker[emoji];
       const bx = startX + idx * badgeSpacing;
       t.badgeObj = this.add.text(bx, dockY, `${emoji} 0/${t.total}`, {
-        fontSize: "14px", fontStyle: "bold", color: "#ffffff",
+        fontSize: "13px", fontStyle: "bold", color: "#ffffff",
         backgroundColor: "#3e2723", padding: { x: 7, y: 3 },
       }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
     });
 
-    // Offerings Progress Bar
-    this.progressBarBg = this.add.rectangle(dockX, dockY + 25, 440, 8, 0x3e2723)
+    this.progressBarBg = this.add.rectangle(dockX, dockY + 25, 480, 8, 0x3e2723)
       .setScrollFactor(0).setDepth(201);
-    this.progressBarFill = this.add.rectangle(dockX - 220, dockY + 25, 0, 8, 0xffd700)
+    this.progressBarFill = this.add.rectangle(dockX - 240, dockY + 25, 0, 8, 0xffd700)
       .setOrigin(0, 0.5).setScrollFactor(0).setDepth(202);
 
     // 3. Top-Right Quick Action Controls
-    // Pause button
     this.hudPauseBtn = this.add.text(this.scale.width - 76, 34, "⏸️ PAUSE", {
       fontSize: "13px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#3e2723", padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
     this.hudPauseBtn.on("pointerdown", () => this.togglePause());
-    this.hudPauseBtn.on("pointerover", () => this.hudPauseBtn.setStyle({ color: "#ffd700", backgroundColor: "#5d4037" }));
-    this.hudPauseBtn.on("pointerout", () => this.hudPauseBtn.setStyle({ color: "#ffffff", backgroundColor: "#3e2723" }));
 
-    // Audio toggle button
     this.hudAudioBtn = this.add.text(this.scale.width - 76, 74, "🔊 SOUND", {
       fontSize: "13px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#2e3b44", padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
     this.hudAudioBtn.on("pointerdown", () => {
       const isMuted = this.soundFX.toggleMute();
       this.hudAudioBtn.setText(isMuted ? "🔇 SOUND" : "🔊 SOUND");
       if (this.pauseAudioBtn) this.pauseAudioBtn.setText(isMuted ? "🔇  Audio: OFF" : "🔊  Audio: ON");
     });
-    this.hudAudioBtn.on("pointerover", () => this.hudAudioBtn.setStyle({ color: "#ffd700" }));
-    this.hudAudioBtn.on("pointerout", () => this.hudAudioBtn.setStyle({ color: "#ffffff" }));
 
-    // Fullscreen toggle button
     this.hudFullscreenBtn = this.add.text(this.scale.width - 76, 114, "⛶ FULL", {
       fontSize: "13px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#2e3b44", padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
     this.hudFullscreenBtn.on("pointerdown", () => {
       if (!document.fullscreenElement) {
         if (document.documentElement.requestFullscreen) {
@@ -750,75 +775,112 @@ export default class Level1Scene extends Phaser.Scene {
         }
       }
     });
-    this.hudFullscreenBtn.on("pointerover", () => this.hudFullscreenBtn.setStyle({ color: "#ffd700" }));
-    this.hudFullscreenBtn.on("pointerout", () => this.hudFullscreenBtn.setStyle({ color: "#ffffff" }));
 
-    // Spawn label (world space)
-    this.add.text(SPAWN_X, SPAWN_Y - 42, "▼ START", {
-      fontSize: "14px", color: "#1a5c1a", fontStyle: "bold",
-    }).setOrigin(0.5);
+    // Start Entrance Marker
+    this.add.text(SPAWN_X, SPAWN_Y - 45, "🛕 TEMPLE GARDEN ENTRANCE", {
+      fontSize: "13px", color: "#ffffff", fontStyle: "bold",
+      backgroundColor: "#2e7d32ee", padding: { x: 8, y: 4 },
+    }).setOrigin(0.5).setDepth(60);
 
-    // Popup for rock hit — screen-space (scrollFactor 0)
-    this.hitPopup = this.add
-      .text(this.scale.width / 2, this.scale.height / 2 + 30, "", {
-        fontSize: "24px", fontStyle: "bold",
-        color: "#ff0000", stroke: "#ffffff", strokeThickness: 5,
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(300)
-      .setVisible(false);
+    // Hit popup (screen-space)
+    this.hitPopup = this.add.text(this.scale.width / 2, this.scale.height / 2 + 30, "", {
+      fontSize: "22px", fontStyle: "bold",
+      color: "#ff3333", stroke: "#ffffff", strokeThickness: 5,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setVisible(false);
 
-    // Build Pause Modal
+    // ─────────────────────────────────────
+    //  ON-SCREEN TOUCH VIRTUAL D-PAD (for mobile/tablet)
+    // ─────────────────────────────────────
+    this.createTouchControls();
+
+    // Pause Menu Modal
     this.createPauseMenu();
+
+    // Global reference for verification
+    window.__level1Scene = this;
   }
 
   // ═══════════════════════════════════════════
-  //  PAUSE MENU MODAL
+  //  TOUCH D-PAD CONTROLS
+  // ═══════════════════════════════════════════
+  createTouchControls() {
+    const padX = 90;
+    const padY = this.scale.height - 90;
+    const btnSize = 44;
+
+    const padContainer = this.add.container(padX, padY).setScrollFactor(0).setDepth(300);
+
+    const makeBtn = (bx, by, label, vx, vy) => {
+      const bg = this.add.circle(bx, by, btnSize / 2, 0x221105, 0.7)
+        .setStrokeStyle(2, 0xffd700, 0.8)
+        .setInteractive({ useHandCursor: true });
+
+      const text = this.add.text(bx, by, label, {
+        fontSize: "18px", fontStyle: "bold", color: "#ffd700",
+      }).setOrigin(0.5);
+
+      bg.on("pointerdown", () => {
+        this.touchVector = { x: vx, y: vy };
+        this.isTouchActive = true;
+        bg.setFillStyle(0xd84315, 0.9);
+      });
+      bg.on("pointerup", () => {
+        this.touchVector = { x: 0, y: 0 };
+        this.isTouchActive = false;
+        bg.setFillStyle(0x221105, 0.7);
+      });
+      bg.on("pointerout", () => {
+        this.touchVector = { x: 0, y: 0 };
+        this.isTouchActive = false;
+        bg.setFillStyle(0x221105, 0.7);
+      });
+
+      return [bg, text];
+    };
+
+    const upBtn    = makeBtn(0, -42, "▲", 0, -1);
+    const downBtn  = makeBtn(0, 42, "▼", 0, 1);
+    const leftBtn  = makeBtn(-42, 0, "◀", -1, 0);
+    const rightBtn = makeBtn(42, 0, "▶", 1, 0);
+
+    padContainer.add([...upBtn, ...downBtn, ...leftBtn, ...rightBtn]);
+  }
+
+  // ═══════════════════════════════════════════
+  //  PAUSE MENU
   // ═══════════════════════════════════════════
   createPauseMenu() {
     this.pauseContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(800).setVisible(false);
 
-    // Dim overlay
     const overlay = this.add.rectangle(
       this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height,
-      0x000000, 0.75
+      this.scale.width, this.scale.height, 0x000000, 0.75
     ).setInteractive();
 
-    // Card background
     const cardW = 460;
     const cardH = 410;
     const card = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      cardW, cardH,
-      0x241208, 0.96
+      this.scale.width / 2, this.scale.height / 2, cardW, cardH, 0x241208, 0.96
     );
     card.setStrokeStyle(3, 0xffd700);
 
-    // Header
     const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 150, "⏸️ GAME PAUSED", {
       fontSize: "28px", fontStyle: "bold", color: "#ffd700",
       stroke: "#3d1f00", strokeThickness: 4,
     }).setOrigin(0.5);
 
-    // Summary stats
     this.pauseStatsText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 75, "", {
       fontSize: "16px", color: "#ffffff",
       backgroundColor: "#1c0d05aa",
       padding: { x: 20, y: 10 }, align: "center", lineSpacing: 6,
     }).setOrigin(0.5);
 
-    // Resume Button
     const resumeBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 15, "▶️  Resume Game", {
       fontSize: "18px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#d84315", padding: { x: 28, y: 9 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     resumeBtn.on("pointerdown", () => this.togglePause());
-    resumeBtn.on("pointerover", () => resumeBtn.setStyle({ color: "#ffd700" }));
-    resumeBtn.on("pointerout", () => resumeBtn.setStyle({ color: "#ffffff" }));
 
-    // Restart Button
     const restartBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 70, "🔄  Restart Level", {
       fontSize: "18px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#4e342e", padding: { x: 28, y: 9 },
@@ -827,10 +889,7 @@ export default class Level1Scene extends Phaser.Scene {
       this.soundFX.stopBGM();
       this.scene.restart();
     });
-    restartBtn.on("pointerover", () => restartBtn.setStyle({ color: "#ffd700" }));
-    restartBtn.on("pointerout", () => restartBtn.setStyle({ color: "#ffffff" }));
 
-    // Audio Toggle Button
     this.pauseAudioBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 125, "🔊  Audio: ON", {
       fontSize: "16px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#37474f", padding: { x: 22, y: 8 },
@@ -840,10 +899,7 @@ export default class Level1Scene extends Phaser.Scene {
       this.pauseAudioBtn.setText(isMuted ? "🔇  Audio: OFF" : "🔊  Audio: ON");
       if (this.hudAudioBtn) this.hudAudioBtn.setText(isMuted ? "🔇 SOUND" : "🔊 SOUND");
     });
-    this.pauseAudioBtn.on("pointerover", () => this.pauseAudioBtn.setStyle({ color: "#ffd700" }));
-    this.pauseAudioBtn.on("pointerout", () => this.pauseAudioBtn.setStyle({ color: "#ffffff" }));
 
-    // Main Menu Button
     const menuBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 172, "🏠  Main Menu", {
       fontSize: "16px", fontStyle: "bold", color: "#b0bec5",
       backgroundColor: "#212121", padding: { x: 22, y: 7 },
@@ -852,8 +908,6 @@ export default class Level1Scene extends Phaser.Scene {
       this.soundFX.stopBGM();
       window.dispatchEvent(new CustomEvent("nav-home"));
     });
-    menuBtn.on("pointerover", () => menuBtn.setStyle({ color: "#ffd700" }));
-    menuBtn.on("pointerout", () => menuBtn.setStyle({ color: "#b0bec5" }));
 
     this.pauseContainer.add([overlay, card, title, this.pauseStatsText, resumeBtn, restartBtn, this.pauseAudioBtn, menuBtn]);
   }
@@ -866,12 +920,12 @@ export default class Level1Scene extends Phaser.Scene {
     if (this.isGamePaused) {
       this.physics.world.isPaused = true;
       this.timerEvent.paused = true;
-      if (this._walkBobTween) this._walkBobTween.pause();
       this.player.body.setVelocity(0);
 
       this.pauseStatsText.setText(
         `⭐ Current Score: ${this.score} pts\n` +
         `🛕 Offerings: ${this.collected} / ${this.totalItems}\n` +
+        `🌱 Eco-Seva Cleaned: ${this.ecoCleaned} items\n` +
         `❤️ Lives Left: ${this.lives}\n` +
         `⏱️ Time Left: ${this.timeLeft}s`
       );
@@ -884,10 +938,388 @@ export default class Level1Scene extends Phaser.Scene {
   }
 
   // ═══════════════════════════════════════════
+  //  TIMER TICK
+  // ═══════════════════════════════════════════
+  onTick() {
+    if (this.isGamePaused || this.gameOver || this.levelComplete) return;
+
+    this.timeLeft--;
+    this.timerText.setText(`⏱️ TIME: ${this.timeLeft}s`);
+
+    if (this.timeLeft <= 20) {
+      this.timerText.setColor(this.timeLeft % 2 === 0 ? "#ff1744" : "#ff8a80");
+      this.tweens.add({
+        targets: this.timerText,
+        scaleX: 1.14, scaleY: 1.14,
+        duration: 120, yoyo: true,
+      });
+    }
+
+    if (this.timeLeft <= 0) {
+      this.triggerGameOver("⏱️ Time's Up!\nThe evening aarti has started without offerings...");
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  //  COLLECT ITEM
+  // ═══════════════════════════════════════════
+  onCollect(player, item) {
+    this.score     += item.pointValue;
+    this.collected += 1;
+    this.soundFX.playCollect();
+
+    const ix = item.x;
+    const iy = item.y;
+
+    // Sparkle Burst
+    const sparkleColors = [0xffd700, 0xff8f00, 0xffffff, 0xff6f00, 0xffee58, 0xf06292];
+    for (let i = 0; i < 12; i++) {
+      const col   = sparkleColors[i % sparkleColors.length];
+      const p     = this.add.circle(ix, iy, Phaser.Math.Between(3, 6), col, 1).setDepth(350);
+      const angle = (i / 12) * Math.PI * 2;
+      const dist  = Phaser.Math.Between(26, 54);
+      this.tweens.add({
+        targets: p,
+        x: ix + Math.cos(angle) * dist,
+        y: iy + Math.sin(angle) * dist - 10,
+        alpha: 0, scale: 0.1,
+        duration: Phaser.Math.Between(400, 650),
+        ease: "Cubic.easeOut",
+        onComplete: () => p.destroy(),
+      });
+    }
+
+    // Floating score label
+    const floatLabel = this.add.text(ix, iy - 16, `${item.itemEmoji} +${item.pointValue}`, {
+      fontSize: "19px", fontStyle: "bold",
+      color: "#ffffff", stroke: "#2d1600", strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(360);
+
+    this.tweens.add({
+      targets: floatLabel,
+      y: iy - 70, alpha: 0, scale: 1.25,
+      duration: 900, ease: "Cubic.easeOut",
+      onComplete: () => floatLabel.destroy(),
+    });
+
+    this.scoreText.setText(`⭐ SCORE: ${this.score}`);
+
+    // Update tracker badge
+    const t = this.tracker[item.itemEmoji];
+    if (t) {
+      t.count++;
+      if (t.count >= t.total) {
+        t.badgeObj.setText(`${item.itemEmoji} ${t.total}/${t.total} ✓`);
+        t.badgeObj.setStyle({ backgroundColor: "#2e7d32", color: "#ffd700" });
+        this.tweens.add({
+          targets: t.badgeObj,
+          scaleX: 1.25, scaleY: 1.25,
+          duration: 150, yoyo: true, ease: "Back.easeOut",
+        });
+      } else {
+        t.badgeObj.setText(`${item.itemEmoji} ${t.count}/${t.total}`);
+      }
+    }
+
+    // Update Progress Bar
+    const progressFrac = Math.min(1, this.collected / this.totalItems);
+    this.tweens.add({
+      targets: this.progressBarFill,
+      width: progressFrac * 480,
+      duration: 200, ease: "Sine.easeOut",
+    });
+
+    if (item.shadowRef) {
+      this.tweens.add({
+        targets: item.shadowRef,
+        alpha: 0, duration: 200,
+        onComplete: () => item.shadowRef.destroy(),
+      });
+    }
+
+    this.tweens.add({
+      targets: [item, item.glowRef, item.labelRef],
+      scale: 0, alpha: 0,
+      duration: 200, ease: "Back.easeIn",
+      onComplete: () => {
+        if (item.glowRef) item.glowRef.destroy();
+        if (item.labelRef) item.labelRef.destroy();
+        item.destroy();
+      },
+    });
+
+    if (this.collected === this.totalItems) {
+      this.openTempleGate();
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  //  ECO-SEVA PLASTIC CLEAN-UP
+  // ═══════════════════════════════════════════
+  onCleanEco(player, waste) {
+    const bonus = 20;
+    this.score += bonus;
+    this.ecoCleaned += 1;
+    this.soundFX.playEcoClean();
+
+    const wx = waste.x;
+    const wy = waste.y;
+
+    const floatLabel = this.add.text(wx, wy - 16, "🌱 Clean Seva! +20", {
+      fontSize: "17px", fontStyle: "bold",
+      color: "#a5d6a7", stroke: "#1b5e20", strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(360);
+
+    this.tweens.add({
+      targets: floatLabel,
+      y: wy - 65, alpha: 0, scale: 1.2,
+      duration: 900, ease: "Cubic.easeOut",
+      onComplete: () => floatLabel.destroy(),
+    });
+
+    this.scoreText.setText(`⭐ SCORE: ${this.score}`);
+
+    this.tweens.add({
+      targets: waste,
+      scale: 0, alpha: 0,
+      duration: 200,
+      onComplete: () => waste.destroy(),
+    });
+  }
+
+  // ═══════════════════════════════════════════
+  //  OPEN TEMPLE GATE
+  // ═══════════════════════════════════════════
+  openTempleGate() {
+    if (this.allCollected) return;
+    this.allCollected = true;
+
+    if (this.timerEvent) this.timerEvent.paused = true;
+    this.player.body.setVelocity(0);
+    this.player.anims.play("idle", true);
+
+    // STEP 1: All offerings gathered banner
+    const dimBg = this.add.rectangle(
+      this.scale.width / 2, this.scale.height / 2,
+      this.scale.width, this.scale.height, 0x000000, 0.55
+    ).setScrollFactor(0).setDepth(750).setAlpha(0);
+
+    this.tweens.add({ targets: dimBg, alpha: 0.55, duration: 400 });
+
+    const bannerText = this.add.text(
+      this.scale.width / 2, this.scale.height / 2,
+      "✨ All 18 Sacred Offerings Gathered! ✨\nThe Temple Gate is Opening...",
+      {
+        fontSize: "24px", fontStyle: "bold", color: "#ffd700",
+        stroke: "#3e1700", strokeThickness: 5,
+        backgroundColor: "#1f0c03ee", padding: { x: 28, y: 16 },
+        align: "center",
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(760).setScale(0.2);
+
+    this.tweens.add({
+      targets: bannerText,
+      scale: 1, duration: 500, ease: "Back.easeOut",
+    });
+
+    // STEP 2: Temple Bell Chime
+    this.time.delayedCall(800, () => {
+      this.soundFX.playGateOpen();
+      this.cameras.main.shake(250, 0.006);
+    });
+
+    // STEP 3: Camera Pan to Temple Gate Archway in Artwork
+    this.time.delayedCall(2000, () => {
+      this.tweens.add({
+        targets: [bannerText, dimBg],
+        alpha: 0, duration: 400,
+        onComplete: () => {
+          bannerText.destroy();
+          dimBg.destroy();
+        },
+      });
+
+      this.cameras.main.stopFollow();
+      this.cameras.main.pan(TEMPLE_GATE_X, TEMPLE_GATE_Y, 1300, "Sine.easeInOut");
+
+      // Divine rays from temple gate arch
+      for (let i = 0; i < 16; i++) {
+        const angle = (i / 16) * Math.PI * 2;
+        const ray = this.add.line(
+          TEMPLE_GATE_X, TEMPLE_GATE_Y, 0, 0,
+          Math.cos(angle) * 140, Math.sin(angle) * 140,
+          0xffd700, 0.95
+        ).setLineWidth(4).setDepth(210);
+
+        this.tweens.add({
+          targets: ray,
+          scaleX: 2.2, scaleY: 2.2, alpha: 0,
+          duration: 1500, ease: "Cubic.easeOut",
+          onComplete: () => ray.destroy(),
+        });
+      }
+    });
+
+    // STEP 4: Remove blocking barrier
+    this.time.delayedCall(3400, () => {
+      this.cameras.main.flash(500, 255, 215, 0);
+
+      if (this.gateCollider) {
+        this.physics.world.removeCollider(this.gateCollider);
+        this.gateCollider = null;
+      }
+
+      if (this.gateBar) {
+        this.tweens.add({
+          targets: this.gateBar,
+          scaleX: 0, alpha: 0, duration: 800,
+          onComplete: () => {
+            if (this.gateBar) this.gateBar.destroy();
+          },
+        });
+      }
+
+      if (this.gateLockText) {
+        this.gateLockText.setText("✨ Gate OPEN! Enter the Sanctum ✨");
+        this.gateLockText.setStyle({ color: "#2e7d32", backgroundColor: "#e8f5e9ee" });
+        this.tweens.add({
+          targets: this.gateLockText,
+          y: TEMPLE_GATE_Y - 50, alpha: 0, duration: 2500,
+          onComplete: () => {
+            if (this.gateLockText) this.gateLockText.destroy();
+          },
+        });
+      }
+    });
+
+    // STEP 5: Pan camera back to devotee with guidance arrow
+    this.time.delayedCall(4800, () => {
+      this.cameras.main.pan(
+        this.player.x, this.player.y, 1100, "Sine.easeInOut",
+        false,
+        (camera, progress) => {
+          if (progress === 1) {
+            this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+          }
+        }
+      );
+
+      if (this.timerEvent) this.timerEvent.paused = false;
+
+      this._guideBanner = this.add.text(
+        this.scale.width / 2, this.scale.height - 42,
+        "🛕 The Temple is open! Enter the inner sanctum for Aarti. 🛕",
+        {
+          fontSize: "15px", fontStyle: "bold", color: "#ffffff",
+          backgroundColor: "#d84315ee", padding: { x: 20, y: 8 },
+        }
+      ).setOrigin(0.5).setScrollFactor(0).setDepth(500);
+
+      this.tweens.add({
+        targets: this._guideBanner,
+        alpha: 0.6, duration: 700, yoyo: true, repeat: -1,
+      });
+
+      this._templeArrow = this.add.text(this.player.x, this.player.y, "➤", {
+        fontSize: "26px", fontStyle: "bold", color: "#ffd700",
+        stroke: "#3d1f00", strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(260);
+
+      this.tweens.add({
+        targets: this._templeArrow,
+        scaleX: 1.3, scaleY: 1.3,
+        duration: 500, yoyo: true, repeat: -1,
+      });
+    });
+  }
+
+  // ═══════════════════════════════════════════
+  //  HIT ROCK (Knockback without Resetting to Start!)
+  // ═══════════════════════════════════════════
+  onHitRock(player, rock) {
+    if (this.isInvincible || this.gameOver) return;
+
+    this.soundFX.playRockHit();
+    this.isInvincible = true;
+    this.time.delayedCall(1400, () => { this.isInvincible = false; });
+
+    this.lives--;
+    const hearts = "❤️ ".repeat(Math.max(0, this.lives)) + "🖤 ".repeat(Math.max(0, 3 - this.lives));
+    this.livesText.setText(hearts.trim());
+
+    // Knockback player 40px away from the rock (NOT teleport to start!)
+    const angle = Phaser.Math.Angle.Between(rock.x, rock.y, player.x, player.y);
+    const knockDist = 45;
+    player.x = Phaser.Math.Clamp(player.x + Math.cos(angle) * knockDist, 50, WORLD_W - 50);
+    player.y = Phaser.Math.Clamp(player.y + Math.sin(angle) * knockDist, 50, WORLD_H - 50);
+    player.body.setVelocity(0);
+
+    // Invincibility blink
+    this.tweens.add({
+      targets: this.player,
+      alpha: 0.25, duration: 90,
+      yoyo: true, repeat: 6,
+      onComplete: () => this.player.setAlpha(1),
+    });
+
+    this.cameras.main.shake(220, 0.01);
+
+    // Screen popup
+    this.hitPopup
+      .setText("💥 Ouch! -1 Life (Watch out!)")
+      .setY(this.scale.height / 2 + 30)
+      .setVisible(true).setAlpha(1);
+
+    this.tweens.add({
+      targets: this.hitPopup,
+      y: this.scale.height / 2 - 20,
+      alpha: 0, duration: 1100, ease: "Cubic.easeOut",
+      onComplete: () => this.hitPopup.setVisible(false),
+    });
+
+    if (this.lives <= 0) {
+      this.triggerGameOver("💀 No lives left!\nThe offerings were lost along the journey...");
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  //  REACH TEMPLE SANCTUM (VICTORY)
+  // ═══════════════════════════════════════════
+  onReachTemple() {
+    if (!this.allCollected || this.levelComplete || this.gameOver) return;
+
+    this.levelComplete = true;
+    if (this.timerEvent) this.timerEvent.remove();
+
+    if (this._guideBanner) { this._guideBanner.destroy(); this._guideBanner = null; }
+    if (this._templeArrow) { this._templeArrow.destroy(); this._templeArrow = null; }
+
+    this.player.body.setVelocity(0);
+    this.cameras.main.stopFollow();
+    this.player.anims.play("walk-up", true);
+
+    this.soundFX.stopBGM();
+    this.soundFX.playVictory();
+
+    // Devotee enters sanctum and bows respectfully
+    this.tweens.add({
+      targets: this.player,
+      y: TEMPLE_SANCTUM_Y - 30,
+      alpha: 0, duration: 1100, ease: "Cubic.easeOut",
+    });
+
+    this.cameras.main.fade(1200, 0, 0, 0);
+
+    this.time.delayedCall(1400, () => {
+      this.cameras.main.resetFX();
+      this._showVictoryScreen();
+    });
+  }
+
+  // ═══════════════════════════════════════════
   //  VICTORY CELEBRATION EFFECTS
   // ═══════════════════════════════════════════
   launchCelebrationEffects() {
-    // 1. Festive Flower Petal Shower
     const petalColors = [0xffa000, 0xff5722, 0xe91e63, 0xffd54f, 0xf06292, 0xff1744];
     for (let i = 0; i < 45; i++) {
       const startX = Phaser.Math.Between(20, this.scale.width - 20);
@@ -910,7 +1342,6 @@ export default class Level1Scene extends Phaser.Scene {
       });
     }
 
-    // 2. Temple Golden Firework Sparkle Bursts
     const burstPoints = [
       { x: this.scale.width * 0.25, y: this.scale.height * 0.3 },
       { x: this.scale.width * 0.75, y: this.scale.height * 0.3 },
@@ -918,7 +1349,7 @@ export default class Level1Scene extends Phaser.Scene {
     ];
 
     burstPoints.forEach((pt, bIdx) => {
-      this.time.delayedCall(350 + bIdx * 320, () => {
+      this.time.delayedCall(300 + bIdx * 300, () => {
         const ring = this.add.circle(pt.x, pt.y, 8, 0xffd700, 0.9).setScrollFactor(0).setDepth(610);
         this.tweens.add({
           targets: ring,
@@ -926,751 +1357,147 @@ export default class Level1Scene extends Phaser.Scene {
           duration: 650, ease: "Cubic.easeOut",
           onComplete: () => ring.destroy(),
         });
-
-        for (let j = 0; j < 12; j++) {
-          const spark = this.add.text(pt.x, pt.y, "✦", {
-            fontSize: "18px", color: j % 2 === 0 ? "#ffd700" : "#ff6f00",
-          }).setOrigin(0.5).setScrollFactor(0).setDepth(615);
-
-          const angle = (j / 12) * Math.PI * 2;
-          const dist = Phaser.Math.Between(50, 110);
-          this.tweens.add({
-            targets: spark,
-            x: pt.x + Math.cos(angle) * dist,
-            y: pt.y + Math.sin(angle) * dist,
-            alpha: 0, scale: 0.2, angle: 180,
-            duration: 800, ease: "Cubic.easeOut",
-            onComplete: () => spark.destroy(),
-          });
-        }
       });
     });
   }
 
   // ═══════════════════════════════════════════
-  //  TIMER TICK
-  // ═══════════════════════════════════════════
-  onTick() {
-    if (this.isGamePaused || this.gameOver || this.levelComplete) return;
-
-    this.timeLeft--;
-    this.timerText.setText(`⏱️ TIME: ${this.timeLeft}s`);
-
-    // Flash timer red in last 20 seconds
-    if (this.timeLeft <= 20) {
-      this.timerText.setColor(this.timeLeft % 2 === 0 ? "#ff1744" : "#ff8a80");
-      this.tweens.add({
-        targets: this.timerText,
-        scaleX: 1.14, scaleY: 1.14,
-        duration: 120, yoyo: true,
-      });
-    }
-
-    if (this.timeLeft <= 0) {
-      this.triggerGameOver("⏱️ Time's Up!\nThe aarti has ended without your offerings...");
-    }
-  }
-
-  // ═══════════════════════════════════════════
-  //  COLLECT ITEM
-  // ═══════════════════════════════════════════
-  onCollect(player, item) {
-    this.score     += item.pointValue;
-    this.collected += 1;
-
-    // Play devotional collect chime
-    this.soundFX.playCollect();
-
-    const ix = item.x;
-    const iy = item.y;
-
-    // ── Rich Multi-colour Sparkle Burst ──────────────────────────
-    const sparkleColors = [0xffd700, 0xff8f00, 0xffffff, 0xff6f00, 0xffee58, 0xf06292, 0xaed581];
-    const numParticles  = 14;
-    for (let i = 0; i < numParticles; i++) {
-      const col   = sparkleColors[i % sparkleColors.length];
-      const size  = Phaser.Math.Between(3, 7);
-      const p     = this.add.circle(ix, iy, size, col, 1).setDepth(350);
-      const angle = (i / numParticles) * Math.PI * 2;
-      const dist  = Phaser.Math.Between(28, 62);
-      this.tweens.add({
-        targets: p,
-        x: ix + Math.cos(angle) * dist,
-        y: iy + Math.sin(angle) * dist - Phaser.Math.Between(0, 20),
-        alpha: 0,
-        scaleX: 0.1,
-        scaleY: 0.1,
-        duration: Phaser.Math.Between(400, 700),
-        ease: "Cubic.easeOut",
-        onComplete: () => p.destroy(),
-      });
-    }
-
-    // ── Star / diamond sparkle shapes ────────────────────────────
-    for (let i = 0; i < 5; i++) {
-      const star = this.add.text(
-        ix + Phaser.Math.Between(-20, 20),
-        iy + Phaser.Math.Between(-20, 10),
-        "✦", { fontSize: "14px", color: "#ffd700" }
-      ).setOrigin(0.5).setDepth(355);
-      this.tweens.add({
-        targets: star,
-        y: star.y - Phaser.Math.Between(30, 60),
-        alpha: 0,
-        angle: Phaser.Math.Between(-180, 180),
-        scale: 0,
-        duration: Phaser.Math.Between(500, 900),
-        ease: "Cubic.easeOut",
-        delay: i * 60,
-        onComplete: () => star.destroy(),
-      });
-    }
-
-    // ── Collect ring pulse ────────────────────────────────────────
-    const ring = this.add.circle(ix, iy, 10, item.color, 0.7).setDepth(340);
-    this.tweens.add({
-      targets: ring,
-      scaleX: 4, scaleY: 4, alpha: 0,
-      duration: 500, ease: "Cubic.easeOut",
-      onComplete: () => ring.destroy(),
-    });
-
-    // ── Independent floating score label (per-item, not shared) ──
-    const floatLabel = this.add.text(ix, iy - 16,
-      `${item.itemEmoji} +${item.pointValue}`, {
-        fontSize: "20px", fontStyle: "bold",
-        color: "#ffffff",
-        stroke: "#2d1600", strokeThickness: 5,
-      }
-    ).setOrigin(0.5).setDepth(360).setAlpha(1);
-
-    this.tweens.add({
-      targets: floatLabel,
-      y: iy - 80,
-      alpha: 0,
-      scaleX: 1.3,
-      scaleY: 1.3,
-      duration: 1000,
-      ease: "Cubic.easeOut",
-      onComplete: () => floatLabel.destroy(),
-    });
-
-    // ── Score counter bump ────────────────────────────────────────
-    this.scoreText.setText(`⭐ SCORE: ${this.score}`);
-    this.tweens.add({
-      targets: this.scoreText,
-      scaleX: 1.18, scaleY: 1.18,
-      duration: 120, yoyo: true,
-      ease: "Back.easeOut",
-    });
-
-    // ── Update per-type tracker badge ─────────────────────────────
-    const t = this.tracker[item.itemEmoji];
-    if (t) {
-      t.count++;
-      if (t.count >= t.total) {
-        t.badgeObj.setText(`${item.itemEmoji} ${t.total}/${t.total} ✓`);
-        t.badgeObj.setStyle({ backgroundColor: "#2e7d32", color: "#ffd700" });
-        this.tweens.add({
-          targets: t.badgeObj,
-          scaleX: 1.25, scaleY: 1.25,
-          duration: 150, yoyo: true, ease: "Back.easeOut",
-        });
-      } else {
-        t.badgeObj.setText(`${item.itemEmoji} ${t.count}/${t.total}`);
-      }
-    }
-
-    // ── Progress Bar update ───────────────────────────────────────
-    const progressFrac = Math.min(1, this.collected / this.totalItems);
-    this.tweens.add({
-      targets: this.progressBarFill,
-      width: progressFrac * 440,
-      duration: 220, ease: "Sine.easeOut",
-    });
-
-    if (item.shadowRef) {
-      this.tweens.add({
-        targets: item.shadowRef,
-        alpha: 0,
-        scaleX: 0,
-        scaleY: 0,
-        duration: 200,
-        onComplete: () => item.shadowRef.destroy(),
-      });
-    }
-
-    // Smooth item shrink and fade out
-    this.tweens.add({
-      targets: [item, item.glowRef, item.labelRef],
-      scaleX: 0,
-      scaleY: 0,
-      alpha: 0,
-      duration: 220,
-      ease: "Back.easeIn",
-      onComplete: () => {
-        if (item.glowRef) item.glowRef.destroy();
-        if (item.labelRef) item.labelRef.destroy();
-        item.destroy();
-      },
-    });
-
-    if (this.collected === this.totalItems) {
-      this.openTempleGate();
-    }
-  }
-
-  // ═══════════════════════════════════════════
-  //  OPEN TEMPLE GATE (Cinematic 5-Step Sequence)
-  // ═══════════════════════════════════════════
-  openTempleGate() {
-    if (this.allCollected) return;
-    this.allCollected = true;
-
-    // Pause timer during the cinematic sequence
-    if (this.timerEvent) this.timerEvent.paused = true;
-    this.player.body.setVelocity(0);
-    this.player.anims.play("idle", true);
-
-    // ── STEP 1: Announce All Sacred Offerings Collected (2 seconds) ──
-    const dimBg = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height,
-      0x000000, 0.55
-    ).setScrollFactor(0).setDepth(750).setAlpha(0);
-
-    this.tweens.add({ targets: dimBg, alpha: 0.55, duration: 400 });
-
-    const bannerText = this.add.text(
-      this.scale.width / 2, this.scale.height / 2,
-      "✨ All Sacred Offerings Collected! ✨",
-      {
-        fontSize: "26px",
-        fontStyle: "bold",
-        color: "#ffd700",
-        stroke: "#3e1700",
-        strokeThickness: 5,
-        backgroundColor: "#1f0c03ee",
-        padding: { x: 28, y: 16 },
-        align: "center",
-      }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(760).setScale(0.2);
-
-    this.tweens.add({
-      targets: bannerText,
-      scale: 1,
-      duration: 500,
-      ease: "Back.easeOut",
-    });
-
-    // ── STEP 2: Play Temple Bell Sound (at 800ms) ──
-    this.time.delayedCall(800, () => {
-      this.soundFX.playGateOpen();
-      this.cameras.main.shake(250, 0.006);
-    });
-
-    // ── STEP 3: Temple Glow & Camera Pan to Temple (at 2000ms) ──
-    this.time.delayedCall(2000, () => {
-      // Fade out Step 1 banner & dimming
-      this.tweens.add({
-        targets: [bannerText, dimBg],
-        alpha: 0,
-        duration: 400,
-        onComplete: () => {
-          bannerText.destroy();
-          dimBg.destroy();
-        },
-      });
-
-      // Pan camera smoothly to temple
-      this.cameras.main.stopFollow();
-      this.cameras.main.pan(TEMPLE_X, TEMPLE_Y, 1400, "Sine.easeInOut");
-
-      // Radiate 16 divine golden light rays from temple
-      for (let i = 0; i < 16; i++) {
-        const angle = (i / 16) * Math.PI * 2;
-        const ray = this.add.line(
-          TEMPLE_X, 1155,
-          0, 0,
-          Math.cos(angle) * 160,
-          Math.sin(angle) * 160,
-          0xffd700, 0.95
-        ).setLineWidth(4).setDepth(210);
-
-        this.tweens.add({
-          targets: ray,
-          scaleX: 2.4,
-          scaleY: 2.4,
-          alpha: 0,
-          duration: 1600,
-          ease: "Cubic.easeOut",
-          onComplete: () => ray.destroy(),
-        });
-      }
-
-      // Golden light aura circles around temple
-      this._templeGlowOuter = this.add.circle(TEMPLE_X, 1155, 60, 0xffd700, 0.35).setDepth(205);
-      this.tweens.add({
-        targets: this._templeGlowOuter,
-        scaleX: 2.2,
-        scaleY: 2.2,
-        alpha: 0.15,
-        duration: 1200,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-
-      this._templeGlowInner = this.add.circle(TEMPLE_X, 1155, 30, 0xffeb3b, 0.6).setDepth(206);
-      this.tweens.add({
-        targets: this._templeGlowInner,
-        scaleX: 1.6,
-        scaleY: 1.6,
-        alpha: 0.3,
-        duration: 900,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-    });
-
-    // ── STEP 4: Temple Gate Opens (at 3500ms) ──
-    this.time.delayedCall(3500, () => {
-      // Golden camera flash
-      this.cameras.main.flash(600, 255, 215, 0);
-
-      // Remove physical blocking collider
-      if (this.gateCollider) {
-        this.physics.world.removeCollider(this.gateCollider);
-        this.gateCollider = null;
-      }
-
-      // Hide old single gate bar
-      if (this.gateBar) {
-        this.gateBar.setVisible(false);
-      }
-
-      // Ornate double gate doors sliding apart cinematically
-      const leftDoor = this.add.rectangle(TEMPLE_X - 50, 1155, 100, 18, 0xd84315).setDepth(215);
-      leftDoor.setStrokeStyle(3, 0xffd700);
-      const rightDoor = this.add.rectangle(TEMPLE_X + 50, 1155, 100, 18, 0xd84315).setDepth(215);
-      rightDoor.setStrokeStyle(3, 0xffd700);
-
-      this.tweens.add({
-        targets: leftDoor,
-        x: TEMPLE_X - 160,
-        alpha: 0,
-        duration: 1200,
-        ease: "Cubic.easeInOut",
-        onComplete: () => leftDoor.destroy(),
-      });
-
-      this.tweens.add({
-        targets: rightDoor,
-        x: TEMPLE_X + 160,
-        alpha: 0,
-        duration: 1200,
-        ease: "Cubic.easeInOut",
-        onComplete: () => rightDoor.destroy(),
-      });
-
-      // Update gate text
-      if (this.gateLockText) {
-        this.gateLockText.setText("✨ Gate OPEN! Enter Sanctum ✨");
-        this.gateLockText.setStyle({ color: "#2e7d32", backgroundColor: "#e8f5e9ee" });
-        this.tweens.add({
-          targets: this.gateLockText,
-          y: 1105,
-          alpha: 0,
-          duration: 2500,
-          onComplete: () => {
-            if (this.gateLockText) this.gateLockText.destroy();
-          },
-        });
-      }
-    });
-
-    // ── STEP 5: Guide the Player & Return Camera (at 4800ms) ──
-    this.time.delayedCall(4800, () => {
-      // Pan camera back to devotee
-      this.cameras.main.pan(
-        this.player.x, this.player.y,
-        1200, "Sine.easeInOut",
-        false,
-        (camera, progress) => {
-          if (progress === 1) {
-            this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-          }
-        }
-      );
-
-      // Resume timer
-      if (this.timerEvent) this.timerEvent.paused = false;
-
-      // Guide banner at bottom of screen
-      this._guideBanner = this.add.text(
-        this.scale.width / 2, this.scale.height - 42,
-        "🛕 The Temple is now open! Go to Lord Ganesha's Temple. 🛕",
-        {
-          fontSize: "16px",
-          fontStyle: "bold",
-          color: "#ffffff",
-          backgroundColor: "#d84315ee",
-          padding: { x: 22, y: 8 },
-        }
-      ).setOrigin(0.5).setScrollFactor(0).setDepth(500);
-
-      this.tweens.add({
-        targets: this._guideBanner,
-        alpha: 0.6,
-        duration: 700,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-
-      // Arrow indicator pointing to temple
-      this._templeArrow = this.add.text(this.player.x, this.player.y, "➤", {
-        fontSize: "26px",
-        fontStyle: "bold",
-        color: "#ffd700",
-        stroke: "#3d1f00",
-        strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(260);
-
-      this.tweens.add({
-        targets: this._templeArrow,
-        scaleX: 1.3,
-        scaleY: 1.3,
-        duration: 500,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-    });
-  }
-
-  // ═══════════════════════════════════════════
-  //  HIT ROCK
-  // ═══════════════════════════════════════════
-  onHitRock(player, rock) {
-    if (this.isInvincible || this.gameOver) return;
-
-    // Play bump sound
-    this.soundFX.playRockHit();
-
-    // Brief invincibility to prevent multiple hits
-    this.isInvincible = true;
-    this.time.delayedCall(1500, () => { this.isInvincible = false; });
-
-    this.lives--;
-    const hearts = "❤️ ".repeat(Math.max(0, this.lives)) + "🖤 ".repeat(Math.max(0, 3 - this.lives));
-    this.livesText.setText(hearts.trim());
-    this.tweens.add({
-      targets: this.livesText,
-      scaleX: 1.25, scaleY: 1.25,
-      duration: 120, yoyo: true,
-    });
-
-    // Flash player red
-    this.tweens.add({
-      targets: this.player,
-      alpha: 0.2, duration: 100,
-      yoyo: true, repeat: 5,
-      onComplete: () => this.player.setAlpha(1),
-    });
-
-    // Camera shake
-    this.cameras.main.shake(300, 0.012);
-
-    // Respawn at start
-    this.player.setPosition(SPAWN_X, SPAWN_Y);
-
-    // Show -1 life popup (screen-space, fixed to camera)
-    this.hitPopup
-      .setText("💥 Ouch! -1 Life")
-      .setY(this.scale.height / 2 + 30)
-      .setVisible(true).setAlpha(1);
-
-    this.tweens.add({
-      targets: this.hitPopup,
-      y: this.scale.height / 2 - 20,
-      alpha: 0,
-      duration: 1200, ease: "Cubic.easeOut",
-      onComplete: () => this.hitPopup.setVisible(false),
-    });
-
-    if (this.lives <= 0) {
-      this.triggerGameOver("💀 No lives left!\nThe sacred offerings are lost...");
-    }
-  }
-
-  // ═══════════════════════════════════════════
-  //  REACH TEMPLE (WIN) — Step 6 & 7
-  // ═══════════════════════════════════════════
-  onReachTemple() {
-    if (!this.allCollected || this.levelComplete || this.gameOver) return;
-
-    this.levelComplete = true;
-    if (this.timerEvent) this.timerEvent.remove();
-
-    // Clean up guide indicators
-    if (this._guideBanner) {
-      this._guideBanner.destroy();
-      this._guideBanner = null;
-    }
-    if (this._templeArrow) {
-      this._templeArrow.destroy();
-      this._templeArrow = null;
-    }
-    if (this._templeGlowOuter) {
-      this._templeGlowOuter.destroy();
-      this._templeGlowOuter = null;
-    }
-    if (this._templeGlowInner) {
-      this._templeGlowInner.destroy();
-      this._templeGlowInner = null;
-    }
-
-    // ── STEP 6: Victory Trigger — Stop movement & enter sanctum ──
-    this.player.body.setVelocity(0);
-    this.cameras.main.stopFollow();
-    this.player.anims.play("walk-up", true);
-
-    // Stop background music & play divine victory music
-    this.soundFX.stopBGM();
-    this.soundFX.playVictory();
-
-    // Devotee walks respectfully up into the sanctum & fades
-    this.tweens.add({
-      targets: this.player,
-      y: TEMPLE_Y - 40,
-      alpha: 0,
-      duration: 1200,
-      ease: "Cubic.easeOut",
-    });
-
-    // Fade camera out
-    this.cameras.main.fade(1400, 0, 0, 0);
-
-    // After fade, transition to victory screen
-    this.time.delayedCall(1600, () => {
-      this.cameras.main.resetFX();
-      this._showVictoryScreen();
-    });
-  }
-
-  // ═══════════════════════════════════════════
-  //  VICTORY SCREEN MODAL (Step 7)
+  //  VICTORY MODAL & PLAYER NAME INPUT
   // ═══════════════════════════════════════════
   _showVictoryScreen() {
-    // Launch flower petal showers & firework bursts
     this.launchCelebrationEffects();
 
-    // Festive falling confetti / sacred offerings
-    const confettiEmojis = ["🌸", "🌼", "🌺", "✨", "🪔", "⭐", "🎉", "🟡"];
-    this.time.addEvent({
-      delay: 300,
-      repeat: 25,
-      callback: () => {
-        const x = Phaser.Math.Between(40, this.scale.width - 40);
-        const emoji = Phaser.Math.RND.pick(confettiEmojis);
-        const p = this.add
-          .text(x, -25, emoji, { fontSize: `${Phaser.Math.Between(18, 32)}px` })
-          .setScrollFactor(0).setDepth(680);
-        this.tweens.add({
-          targets: p,
-          y: this.scale.height + 40,
-          x: x + Phaser.Math.Between(-90, 90),
-          rotation: Phaser.Math.Between(-3, 3),
-          duration: Phaser.Math.Between(2200, 3500),
-          ease: "Quad.easeIn",
-          onComplete: () => p.destroy(),
-        });
-      },
-    });
-
-    // Score & Bonus Calculations
     const offeringsScore = this.score;
     const timeBonus      = Math.max(0, this.timeLeft * 2);
     const livesBonus     = Math.max(0, this.lives * 50);
     const finalScore     = offeringsScore + timeBonus + livesBonus;
 
-    const timeSpent = Math.max(0, TIME_LIMIT - this.timeLeft);
-    const mins = Math.floor(timeSpent / 60);
-    const secs = timeSpent % 60;
-    const timeFormatted = `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-
-    // 3-Star Rating System:
-    // ⭐⭐⭐: All offerings + >=2 lives + >=30s remaining
-    // ⭐⭐: All offerings collected + finish level
-    // ⭐: Reach the temple
     let stars = 1;
-    let starTitle = "⭐ REACHED THE TEMPLE!";
+    let starTitle = "⭐ REACHED THE SANCTUM!";
     if (this.allCollected && this.lives >= 2 && this.timeLeft >= 30) {
       stars = 3;
-      starTitle = "⭐⭐⭐ DIVINE BLESSING!";
+      starTitle = "⭐⭐⭐ DIVINE BLESSINGS!";
     } else if (this.allCollected) {
       stars = 2;
       starTitle = "⭐⭐☆ DEVOTED SEVA!";
     }
 
-    // Persist High Score & Stars in localStorage & Firebase
-    try {
-      const currentBest = parseInt(localStorage.getItem("ganesha_high_score") || "0", 10);
-      if (finalScore > currentBest) {
-        localStorage.setItem("ganesha_high_score", finalScore.toString());
-      }
-      const bestStars = parseInt(localStorage.getItem("ganesha_stars") || "0", 10);
-      if (stars > bestStars) {
-        localStorage.setItem("ganesha_stars", stars.toString());
-      }
-      saveScore("Festival Volunteer", finalScore, stars, this.timeLeft);
-    } catch (e) {
-      // Ignore private browsing storage errors
-    }
-
     // Modal Dim Overlay
     this.add.rectangle(
       this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height,
-      0x000000, 0.8
+      this.scale.width, this.scale.height, 0x000000, 0.82
     ).setScrollFactor(0).setDepth(600);
 
-    // Victory Modal Card Background
+    // Card background
     const cardW = 560;
-    const cardH = 510;
+    const cardH = 540;
     const card = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      cardW, cardH,
-      0x23140a, 0.96
+      this.scale.width / 2, this.scale.height / 2, cardW, cardH, 0x23140a, 0.97
     ).setScrollFactor(0).setDepth(650);
     card.setStrokeStyle(4, 0xffd700);
 
-    this.tweens.add({
-      targets: card,
-      scaleX: 1.015,
-      scaleY: 1.015,
-      duration: 1000,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-
-    // 1. Header Title: "🏆 LEVEL COMPLETE! 🏆"
-    const titleText = this.add
-      .text(this.scale.width / 2, this.scale.height / 2 - 200,
-        "🏆 LEVEL COMPLETE! 🏆", {
+    // Title
+    const titleText = this.add.text(
+      this.scale.width / 2, this.scale.height / 2 - 215,
+      "🏆 LEVEL COMPLETE! 🏆", {
         fontSize: "30px", fontStyle: "bold", color: "#ffd700",
         stroke: "#3d1f00", strokeThickness: 5,
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0.2);
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0.2);
 
     this.tweens.add({
-      targets: titleText,
-      scale: 1,
-      duration: 500,
-      ease: "Back.easeOut",
+      targets: titleText, scale: 1, duration: 450, ease: "Back.easeOut",
     });
 
-    // Subtitle: Star Rank Title
-    this.add
-      .text(this.scale.width / 2, this.scale.height / 2 - 155,
-        starTitle, {
-        fontSize: "20px", fontStyle: "bold", color: "#ffecb3",
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700);
+    // Subtitle
+    this.add.text(
+      this.scale.width / 2, this.scale.height / 2 - 170, starTitle, {
+        fontSize: "19px", fontStyle: "bold", color: "#ffecb3",
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // 2. Animated Star Badges (⭐⭐⭐)
+    // Animated Star Badges
     const starSpacing = 65;
     for (let i = 0; i < 3; i++) {
       const isEarned = i < stars;
-      const starChar = isEarned ? "⭐" : "☆";
-      const starColor = isEarned ? "#ffd700" : "#757575";
-
-      const s = this.add
-        .text(this.scale.width / 2 + (i - 1) * starSpacing, this.scale.height / 2 - 105,
-          starChar, { fontSize: "44px", color: starColor })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0);
+      const s = this.add.text(
+        this.scale.width / 2 + (i - 1) * starSpacing, this.scale.height / 2 - 120,
+        isEarned ? "⭐" : "☆", { fontSize: "40px", color: isEarned ? "#ffd700" : "#757575" }
+      ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0);
 
       this.tweens.add({
-        targets: s,
-        scale: 1.25,
-        duration: 380,
-        delay: 250 + i * 200,
-        ease: "Back.easeOut",
-        onComplete: () => {
-          this.tweens.add({ targets: s, scale: 1.0, duration: 150 });
-          if (isEarned) {
-            const flash = this.add.circle(s.x, s.y, 24, 0xffd700, 0.7)
-              .setScrollFactor(0).setDepth(690);
-            this.tweens.add({
-              targets: flash,
-              scale: 2,
-              alpha: 0,
-              duration: 400,
-              onComplete: () => flash.destroy(),
-            });
-          }
-        },
+        targets: s, scale: 1, duration: 350, delay: 200 + i * 180, ease: "Back.easeOut",
       });
     }
 
-    // 3. Stats Breakdown
+    // Stats Breakdown
     const statsText =
-      `🌸 Sacred Offerings: ${this.collected} / ${this.totalItems} (+${offeringsScore} pts)\n` +
-      `⏱️ Time Left: ${this.timeLeft}s (${timeFormatted}) (+${timeBonus} pts)\n` +
+      `🌸 Offerings + Eco-Seva: ${offeringsScore} pts\n` +
+      `⏱️ Time Left (${this.timeLeft}s): +${timeBonus} pts\n` +
       `❤️ Devotion Bonus (${this.lives} lives): +${livesBonus} pts\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `🏆 TOTAL SCORE: ${finalScore} pts`;
 
-    this.add
-      .text(this.scale.width / 2, this.scale.height / 2 + 25, statsText, {
-        fontSize: "17px", color: "#ffffff",
-        backgroundColor: "#160b05aa",
-        padding: { x: 22, y: 14 }, align: "center", lineSpacing: 8,
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700);
+    this.add.text(
+      this.scale.width / 2, this.scale.height / 2 + 5, statsText, {
+        fontSize: "16px", color: "#ffffff",
+        backgroundColor: "#160b05aa", padding: { x: 20, y: 12 },
+        align: "center", lineSpacing: 6,
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // 4. Action Buttons: Play Again, Home, Leaderboard
-    const btnY = this.scale.height / 2 + 185;
+    // Player Name Prompt & Save to Leaderboard
+    let enteredName = localStorage.getItem("ganesha_last_player_name") || "";
+    const nameLabel = this.add.text(
+      this.scale.width / 2, this.scale.height / 2 + 105,
+      enteredName ? `Devotee: ${enteredName}` : "Tap here to set your Leaderboard Name", {
+        fontSize: "15px", fontStyle: "bold", color: "#ffd700",
+        backgroundColor: "#3e2723", padding: { x: 16, y: 6 },
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
+    nameLabel.on("pointerdown", () => {
+      const inputName = window.prompt("Enter your name for the Festival Leaderboard:", enteredName || "");
+      if (inputName && inputName.trim()) {
+        enteredName = inputName.trim().slice(0, 24);
+        localStorage.setItem("ganesha_last_player_name", enteredName);
+        nameLabel.setText(`Devotee: ${enteredName}`);
+        saveScore(enteredName, finalScore, stars, this.timeLeft);
+      }
+    });
+
+    // Save default score immediately
+    try {
+      const best = parseInt(localStorage.getItem("ganesha_high_score") || "0", 10);
+      if (finalScore > best) localStorage.setItem("ganesha_high_score", finalScore.toString());
+      localStorage.setItem("ganesha_stars", Math.max(stars, parseInt(localStorage.getItem("ganesha_stars") || "0", 10)).toString());
+      saveScore(enteredName || "Festival Volunteer", finalScore, stars, this.timeLeft);
+    } catch (e) {}
+
+    // Action Buttons
+    const btnY = this.scale.height / 2 + 175;
     const createBtn = (label, xOffset, bgHex, onClick) => {
-      const btn = this.add
-        .text(this.scale.width / 2 + xOffset, btnY, label, {
-          fontSize: "16px", fontStyle: "bold",
-          color: "#ffffff", backgroundColor: bgHex,
-          padding: { x: 14, y: 10 },
-        })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(700)
-        .setInteractive({ useHandCursor: true });
+      const btn = this.add.text(this.scale.width / 2 + xOffset, btnY, label, {
+        fontSize: "16px", fontStyle: "bold", color: "#ffffff",
+        backgroundColor: bgHex, padding: { x: 14, y: 10 },
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
-      btn.on("pointerover", () => {
-        btn.setScale(1.08);
-        btn.setStyle({ color: "#ffd700" });
-      });
-      btn.on("pointerout", () => {
-        btn.setScale(1.0);
-        btn.setStyle({ color: "#ffffff" });
-      });
+      btn.on("pointerover", () => { btn.setScale(1.06); btn.setStyle({ color: "#ffd700" }); });
+      btn.on("pointerout",  () => { btn.setScale(1.0);  btn.setStyle({ color: "#ffffff" }); });
       btn.on("pointerdown", onClick);
-
       return btn;
     };
 
-    // 🔄 Play Again
     createBtn("🔄 Play Again", -150, "#d84315", () => {
       this.soundFX.stopBGM();
       this.scene.restart();
     });
 
-    // 🏠 Home
     createBtn("🏠 Home", 0, "#4e342e", () => {
       this.soundFX.stopBGM();
       window.dispatchEvent(new CustomEvent("nav-home"));
     });
 
-    // 🏆 Leaderboard
     createBtn("🏆 Leaderboard", 150, "#1565c0", () => {
       this.soundFX.stopBGM();
       sessionStorage.setItem("open_modal", "leaderboard");
@@ -1689,77 +1516,47 @@ export default class Level1Scene extends Phaser.Scene {
 
     this.player.body.setVelocity(0);
     this.cameras.main.stopFollow();
-    this.cameras.main.shake(500, 0.02);
+    this.cameras.main.shake(400, 0.015);
 
-    // Dim overlay
     this.add.rectangle(
       this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height,
-      0x000000, 0.75
+      this.scale.width, this.scale.height, 0x000000, 0.75
     ).setScrollFactor(0).setDepth(600);
 
-    // Card background
     const card = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      500, 360,
-      0x2a0d0d, 0.95
+      this.scale.width / 2, this.scale.height / 2, 500, 360, 0x2a0d0d, 0.95
     ).setScrollFactor(0).setDepth(650);
     card.setStrokeStyle(3, 0xff4444);
 
-    // Title
-    this.add
-      .text(this.scale.width / 2, this.scale.height / 2 - 120,
-        "💔 Game Over", {
-        fontSize: "36px", fontStyle: "bold",
-        color: "#ff5252", stroke: "#220000", strokeThickness: 5,
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700);
+    this.add.text(this.scale.width / 2, this.scale.height / 2 - 120, "💔 Game Over", {
+      fontSize: "36px", fontStyle: "bold", color: "#ff5252",
+      stroke: "#220000", strokeThickness: 5,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // Reason & Score
-    this.add
-      .text(this.scale.width / 2, this.scale.height / 2 - 20,
-        `${reason}\n\n⭐ Score Achieved: ${this.score} pts`, {
-        fontSize: "19px", color: "#ffffff",
-        backgroundColor: "#18050588",
-        padding: { x: 18, y: 14 }, align: "center", lineSpacing: 8,
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700);
+    this.add.text(this.scale.width / 2, this.scale.height / 2 - 20, `${reason}\n\n⭐ Score Achieved: ${this.score} pts`, {
+      fontSize: "18px", color: "#ffffff", backgroundColor: "#18050588",
+      padding: { x: 18, y: 14 }, align: "center", lineSpacing: 8,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // Try Again button
-    const retryBtn = this.add
-      .text(this.scale.width / 2 - 100, this.scale.height / 2 + 115,
-        "🔄  Try Again", {
-        fontSize: "19px", fontStyle: "bold",
-        color: "#ffffff", backgroundColor: "#c0392b",
-        padding: { x: 18, y: 10 },
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700)
-      .setInteractive({ useHandCursor: true });
+    const retryBtn = this.add.text(this.scale.width / 2 - 100, this.scale.height / 2 + 115, "🔄  Try Again", {
+      fontSize: "19px", fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#c0392b", padding: { x: 18, y: 10 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
     retryBtn.on("pointerdown", () => {
       this.soundFX.stopBGM();
       this.scene.restart();
     });
-    retryBtn.on("pointerover",  () => retryBtn.setStyle({ color: "#ffd700" }));
-    retryBtn.on("pointerout",   () => retryBtn.setStyle({ color: "#ffffff" }));
 
-    // Main Menu button
-    const menuBtn = this.add
-      .text(this.scale.width / 2 + 100, this.scale.height / 2 + 115,
-        "🏠  Main Menu", {
-        fontSize: "19px", fontStyle: "bold",
-        color: "#ffffff", backgroundColor: "#424242",
-        padding: { x: 18, y: 10 },
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700)
-      .setInteractive({ useHandCursor: true });
+    const menuBtn = this.add.text(this.scale.width / 2 + 100, this.scale.height / 2 + 115, "🏠  Main Menu", {
+      fontSize: "19px", fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#424242", padding: { x: 18, y: 10 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
     menuBtn.on("pointerdown", () => {
       this.soundFX.stopBGM();
       window.dispatchEvent(new CustomEvent("nav-home"));
     });
-    menuBtn.on("pointerover",  () => menuBtn.setStyle({ color: "#ffd700" }));
-    menuBtn.on("pointerout",   () => menuBtn.setStyle({ color: "#ffffff" }));
   }
 
   // ═══════════════════════════════════════════
@@ -1769,56 +1566,62 @@ export default class Level1Scene extends Phaser.Scene {
     if (this.isGamePaused || this.gameOver || this.levelComplete) return;
 
     const speed = 220;
-    const vx = this.player.body.velocity.x;
-    const vy = this.player.body.velocity.y;
-    this.player.body.setVelocity(0);
-
+    let vx = 0;
+    let vy = 0;
     let moving = false;
     let dir = this._lastDir;
 
-    // ── Horizontal movement ──────────────────────────
+    // Keyboard Input
     if (this.cursors.left.isDown || this.keys.A.isDown) {
-      this.player.body.setVelocityX(-speed);
-      this.player.setFlipX(false);
+      vx -= 1;
       dir = "left";
       moving = true;
-    } else if (this.cursors.right.isDown || this.keys.D.isDown) {
-      this.player.body.setVelocityX(speed);
-      this.player.setFlipX(false);
+    }
+    if (this.cursors.right.isDown || this.keys.D.isDown) {
+      vx += 1;
       dir = "right";
       moving = true;
     }
-
-    // ── Vertical movement ────────────────────────────
     if (this.cursors.up.isDown || this.keys.W.isDown) {
-      this.player.body.setVelocityY(-speed);
+      vy -= 1;
       dir = "up";
       moving = true;
-    } else if (this.cursors.down.isDown || this.keys.S.isDown) {
-      this.player.body.setVelocityY(speed);
+    }
+    if (this.cursors.down.isDown || this.keys.S.isDown) {
+      vy += 1;
       dir = "down";
       moving = true;
     }
 
-    // Normalize diagonal speed
-    this.player.body.velocity.normalize().scale(speed);
-    this._lastDir = dir;
-
-    // ── Start devotional ambient music on movement ───
-    if (moving && !this.soundFX.bgmPlaying && !this.soundFX.isMuted) {
-      this.soundFX.startBGM();
+    // Touch / On-screen D-pad input
+    if (this.isTouchActive && (this.touchVector.x !== 0 || this.touchVector.y !== 0)) {
+      vx = this.touchVector.x;
+      vy = this.touchVector.y;
+      moving = true;
+      if (Math.abs(vx) > Math.abs(vy)) {
+        dir = vx > 0 ? "right" : "left";
+      } else {
+        dir = vy > 0 ? "down" : "up";
+      }
     }
 
-    // ── Directional & Idle Animations ────────────────
     if (moving) {
-      this.player.setAngle(0);
+      const len = Math.hypot(vx, vy);
+      if (len > 0) {
+        this.player.body.setVelocity((vx / len) * speed, (vy / len) * speed);
+      }
+      this._lastDir = dir;
       this.player.anims.play(`walk-${dir}`, true);
+
+      if (!this.soundFX.bgmPlaying && !this.soundFX.isMuted) {
+        this.soundFX.startBGM();
+      }
     } else {
-      this.player.setAngle(0);
+      this.player.body.setVelocity(0);
       this.player.anims.play("idle", true);
     }
 
-    // ── Collectibles Proximity Glow (Item 2) ─────────
+    // Collectibles Proximity Glow
     if (this.collectiblesGroup) {
       const px = this.player.x;
       const py = this.player.y;
@@ -1826,7 +1629,6 @@ export default class Level1Scene extends Phaser.Scene {
         if (!item || !item.active || !item.glowRef) return;
         const dist = Phaser.Math.Distance.Between(px, py, item.x, item.y);
         if (dist < 140) {
-          // Glow gets brighter and expands as player approaches
           const factor = 1 - dist / 140;
           item.glowRef.setAlpha(0.35 + factor * 0.45);
           item.glowRef.setScale(1.2 + factor * 0.6);
@@ -1837,9 +1639,9 @@ export default class Level1Scene extends Phaser.Scene {
       });
     }
 
-    // ── Update temple guide arrow ────────────────────
+    // Update Temple Guide Arrow
     if (this._templeArrow && this.allCollected && !this.levelComplete) {
-      const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, TEMPLE_X, TEMPLE_Y);
+      const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, TEMPLE_GATE_X, TEMPLE_GATE_Y);
       this._templeArrow.setPosition(
         this.player.x + Math.cos(angle) * 55,
         this.player.y + Math.sin(angle) * 55

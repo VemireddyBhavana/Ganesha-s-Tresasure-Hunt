@@ -26,6 +26,10 @@ const gameConfig = {
     },
   },
 
+  dom: {
+    createContainer: true,
+  },
+
   scene: [BootScene, PreloadScene, Level1Scene],
 };
 
