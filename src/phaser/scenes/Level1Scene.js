@@ -356,6 +356,44 @@ class SoundFX {
       osc.stop(now + 0.06);
     } catch (e) {}
   }
+
+  // ─── NEW: Aarti Blessing – temple bells + conch resonance ───
+  playAartiBlessing() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      // Rising temple bell sequence (Panchamrit melody)
+      const bellNotes = [
+        { f: 392.00, t: 0.00, d: 0.8 },   // G4
+        { f: 523.25, t: 0.20, d: 0.8 },   // C5
+        { f: 659.25, t: 0.40, d: 0.8 },   // E5
+        { f: 783.99, t: 0.60, d: 1.0 },   // G5
+        { f: 1046.50, t: 0.90, d: 1.6 },  // C6 – Aarti peak
+      ];
+      bellNotes.forEach(note => {
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(note.f, now + note.t);
+        g.gain.setValueAtTime(0.22, now + note.t);
+        g.gain.exponentialRampToValueAtTime(0.001, now + note.t + note.d);
+        osc.connect(g); g.connect(this.masterGain);
+        osc.start(now + note.t); osc.stop(now + note.t + note.d);
+      });
+      // Conch resonance (low, warm drone)
+      const conch = this.ctx.createOscillator();
+      const conchG = this.ctx.createGain();
+      conch.type = "sawtooth";
+      conch.frequency.setValueAtTime(130.81, now + 0.5);  // C3
+      conch.frequency.exponentialRampToValueAtTime(174.61, now + 2.5); // F3
+      conchG.gain.setValueAtTime(0.0, now + 0.5);
+      conchG.gain.linearRampToValueAtTime(0.09, now + 1.0);
+      conchG.gain.exponentialRampToValueAtTime(0.001, now + 3.0);
+      conch.connect(conchG); conchG.connect(this.masterGain);
+      conch.start(now + 0.5); conch.stop(now + 3.0);
+    } catch (e) {}
+  }
 }
 
 export default class Level1Scene extends Phaser.Scene {
@@ -381,6 +419,12 @@ export default class Level1Scene extends Phaser.Scene {
     this.levelComplete  = false;
     this.isInvincible   = false;
     this.isGamePaused   = false;
+
+    // Combo / Sprint state
+    this.comboCount     = 0;
+    this.lastCollectTime = 0;
+    this.sprintActive   = false;
+    this.sprintTimer    = null;
 
     // Virtual joystick / touch steering state
     this.touchVector = { x: 0, y: 0 };
@@ -537,9 +581,6 @@ export default class Level1Scene extends Phaser.Scene {
     // Sanctum Win Zone inside the inner temple court
     const templeWinZone = this.add.zone(TEMPLE_SANCTUM_X, TEMPLE_SANCTUM_Y, 190, 160);
     this.physics.add.existing(templeWinZone, true);
-    this.physics.add.overlap(
-      this.player || null, templeWinZone, this.onReachTemple, null, this
-    );
     this.templeWinZone = templeWinZone;
 
     // ─────────────────────────────────────
@@ -677,49 +718,84 @@ export default class Level1Scene extends Phaser.Scene {
     // ─────────────────────────────────────
     //  HUD: TOP BAR GLASSMORPHISM
     // ─────────────────────────────────────
-    // 0. In-game Home button
-    this.hudHomeBtn = this.add.text(64, 22, "⬅ HOME", {
-      fontSize: "13px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#3e2723", padding: { x: 10, y: 5 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
-    this.hudHomeBtn.on("pointerdown", () => {
-      this.soundFX.stopBGM();
-      window.dispatchEvent(new CustomEvent("nav-home"));
-    });
-    this.hudHomeBtn.on("pointerover", () => this.hudHomeBtn.setStyle({ color: "#ffd700", backgroundColor: "#5d4037" }));
-    this.hudHomeBtn.on("pointerout", () => this.hudHomeBtn.setStyle({ color: "#ffffff", backgroundColor: "#3e2723" }));
-
-    // 1. Top-Left Vitals Card
-    this.add.rectangle(126, 92, 224, 94, 0x1d1007, 0.92)
+    // 1. Top-Right Prasad Card (Score) — Reference Game Style
+    const prasadCardW = 230;
+    const prasadCardX = this.scale.width - prasadCardW / 2 - 20;
+    const prasadCardY = 38;
+    const prasadCard = this.add.rectangle(prasadCardX, prasadCardY, prasadCardW, 54, 0x1d1007, 0.95)
       .setStrokeStyle(2, 0xffd700, 0.9)
       .setScrollFactor(0).setDepth(200);
+    const drawCardCorners = (cx, cy, w, h) => {
+      const cornerLen = 10;
+      const col = 0xffd700;
+      const t = 2;
+      // top-left
+      this.add.line(0, 0, cx - w/2 + cornerLen, cy - h/2, cx - w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+      this.add.line(0, 0, cx - w/2, cy - h/2 + cornerLen, cx - w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+      // top-right
+      this.add.line(0, 0, cx + w/2 - cornerLen, cy - h/2, cx + w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+      this.add.line(0, 0, cx + w/2, cy - h/2 + cornerLen, cx + w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+      // bottom-left
+      this.add.line(0, 0, cx - w/2 + cornerLen, cy + h/2, cx - w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+      this.add.line(0, 0, cx - w/2, cy + h/2 - cornerLen, cx - w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+      // bottom-right
+      this.add.line(0, 0, cx + w/2 - cornerLen, cy + h/2, cx + w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+      this.add.line(0, 0, cx + w/2, cy + h/2 - cornerLen, cx + w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
+    };
+    drawCardCorners(prasadCardX, prasadCardY, prasadCardW, 54);
 
-    this.scoreText = this.add.text(26, 52, "⭐ SCORE: 0", {
-      fontSize: "19px", fontStyle: "bold", color: "#ffd700",
-      stroke: "#2a1500", strokeThickness: 3,
-    }).setScrollFactor(0).setDepth(201);
+    this.add.text(prasadCardX - prasadCardW / 2 + 28, prasadCardY - 8, "🍬", {
+      fontSize: "26px",
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
-    this.livesText = this.add.text(26, 80, "❤️ ❤️ ❤️", {
-      fontSize: "18px", color: "#ff4d4d",
-    }).setScrollFactor(0).setDepth(201);
+    this.scoreText = this.add.text(prasadCardX + 12, prasadCardY - 10, "0", {
+      fontSize: "26px", fontStyle: "bold", color: "#ffffff",
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
-    this.timerText = this.add.text(26, 108, `⏱️ TIME: ${TIME_LIMIT}s`, {
-      fontSize: "16px", fontStyle: "bold", color: "#64b5f6",
-      stroke: "#001a33", strokeThickness: 2,
-    }).setScrollFactor(0).setDepth(201);
+    this.add.text(prasadCardX + 12, prasadCardY + 14, "PRASAD", {
+      fontSize: "11px", fontStyle: "bold", color: "#ffb74d",
+      letterSpacing: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
-    // 2. Top-Center Offerings Quest Dock
+    // 2. Top-Left Best Score Card (Reference Game Style)
+    const bestCardW = 230;
+    const bestCardX = bestCardW / 2 + 20;
+    const bestCardY = 38;
+    const bestCard = this.add.rectangle(bestCardX, bestCardY, bestCardW, 54, 0x1d1007, 0.95)
+      .setStrokeStyle(2, 0xffd700, 0.9)
+      .setScrollFactor(0).setDepth(200);
+    drawCardCorners(bestCardX, bestCardY, bestCardW, 54);
+
+    this.add.text(bestCardX - bestCardW / 2 + 28, bestCardY - 8, "🏆", {
+      fontSize: "26px",
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+    let storedBest = 0;
+    try {
+      storedBest = parseInt(localStorage.getItem("ganesha_high_score") || "0", 10);
+    } catch (e) {}
+    this.storedBest = storedBest;
+    this.bestScoreText = this.add.text(bestCardX + 12, bestCardY - 10, storedBest.toString(), {
+      fontSize: "26px", fontStyle: "bold", color: "#ffffff",
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+    this.add.text(bestCardX + 12, bestCardY + 14, "BEST SCORE", {
+      fontSize: "11px", fontStyle: "bold", color: "#ffb74d",
+      letterSpacing: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+    // 3. Top-Center Offerings Quest Dock
     const dockW = 540;
-    const dockH = 82;
+    const dockH = 70;
     const dockX = this.scale.width / 2;
-    const dockY = 53;
+    const dockY = 110;
 
     this.add.rectangle(dockX, dockY, dockW, dockH, 0x1d1007, 0.92)
       .setStrokeStyle(2, 0xffd700, 0.9)
       .setScrollFactor(0).setDepth(200);
 
-    this.add.text(dockX, dockY - 26, "🛕 SACRED OFFERINGS FOR GANESHA", {
-      fontSize: "12px", fontStyle: "bold", color: "#ffecb3",
+    this.add.text(dockX, dockY - 22, "🛕 SACRED OFFERINGS FOR GANESHA", {
+      fontSize: "11px", fontStyle: "bold", color: "#ffecb3",
       stroke: "#2a1500", strokeThickness: 2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
@@ -730,51 +806,50 @@ export default class Level1Scene extends Phaser.Scene {
     TRACKER_ORDER.forEach((emoji, idx) => {
       const t = this.tracker[emoji];
       const bx = startX + idx * badgeSpacing;
-      t.badgeObj = this.add.text(bx, dockY, `${emoji} 0/${t.total}`, {
+      t.badgeObj = this.add.text(bx, dockY + 6, `${emoji} 0/${t.total}`, {
         fontSize: "13px", fontStyle: "bold", color: "#ffffff",
         backgroundColor: "#3e2723", padding: { x: 7, y: 3 },
       }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
     });
 
-    this.progressBarBg = this.add.rectangle(dockX, dockY + 25, 480, 8, 0x3e2723)
+    this.progressBarBg = this.add.rectangle(dockX, dockY + 30, 480, 6, 0x3e2723)
       .setScrollFactor(0).setDepth(201);
-    this.progressBarFill = this.add.rectangle(dockX - 240, dockY + 25, 0, 8, 0xffd700)
+    this.progressBarFill = this.add.rectangle(dockX - 240, dockY + 30, 0, 6, 0xffd700)
       .setOrigin(0, 0.5).setScrollFactor(0).setDepth(202);
 
-    // 3. Top-Right Quick Action Controls
-    this.hudPauseBtn = this.add.text(this.scale.width - 76, 34, "⏸️ PAUSE", {
-      fontSize: "13px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#3e2723", padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
-    this.hudPauseBtn.on("pointerdown", () => this.togglePause());
+    // 4. Vitals Row (Lives + Timer) below Best Score card
+    this.livesText = this.add.text(28, 92, "❤️ ❤️ ❤️", {
+      fontSize: "18px", color: "#ff4d4d",
+    }).setScrollFactor(0).setDepth(201);
 
-    this.hudAudioBtn = this.add.text(this.scale.width - 76, 74, "🔊 SOUND", {
-      fontSize: "13px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#2e3b44", padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
-    this.hudAudioBtn.on("pointerdown", () => {
-      const isMuted = this.soundFX.toggleMute();
-      this.hudAudioBtn.setText(isMuted ? "🔇 SOUND" : "🔊 SOUND");
-      if (this.pauseAudioBtn) this.pauseAudioBtn.setText(isMuted ? "🔇  Audio: OFF" : "🔊  Audio: ON");
-    });
+    this.timerText = this.add.text(28, 118, `⏱️ TIME: ${TIME_LIMIT}s`, {
+      fontSize: "15px", fontStyle: "bold", color: "#64b5f6",
+      stroke: "#001a33", strokeThickness: 2,
+    }).setScrollFactor(0).setDepth(201);
 
-    this.hudFullscreenBtn = this.add.text(this.scale.width - 76, 114, "⛶ FULL", {
-      fontSize: "13px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#2e3b44", padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
-    this.hudFullscreenBtn.on("pointerdown", () => {
-      if (!document.fullscreenElement) {
-        if (document.documentElement.requestFullscreen) {
-          document.documentElement.requestFullscreen();
-          this.hudFullscreenBtn.setText("🗗 EXIT");
-        }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-          this.hudFullscreenBtn.setText("⛶ FULL");
-        }
-      }
+    // 5. Menu Button + Sound Toggle at Top-Right Corner
+    this.hudMenuBtn = this.add.text(this.scale.width - 20, 100, "☰", {
+      fontSize: "26px", fontStyle: "bold", color: "#ffd700",
+      backgroundColor: "#1d1007", padding: { x: 8, y: 1 },
+      stroke: "#ffd700", strokeThickness: 1,
+    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
+    this.hudMenuBtn.on("pointerdown", () => this.togglePause());
+    this.hudMenuBtn.on("pointerover", () => this.hudMenuBtn.setStyle({ color: "#ffffff" }));
+    this.hudMenuBtn.on("pointerout", () => this.hudMenuBtn.setStyle({ color: "#ffd700" }));
+
+    // 5b. HUD Quick Sound Toggle Button (🔊/🔇) — placed left of menu btn
+    const _muteIcon = () => this.soundFX.isMuted ? "🔇" : "🔊";
+    this.hudSoundBtn = this.add.text(this.scale.width - 76, 100, _muteIcon(), {
+      fontSize: "22px", color: "#ffd700",
+      backgroundColor: "#1d1007", padding: { x: 7, y: 2 },
+    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
+    this.hudSoundBtn.on("pointerdown", () => {
+      const muted = this.soundFX.toggleMute();
+      this.hudSoundBtn.setText(muted ? "🔇" : "🔊");
+      this.soundFX.playClick();
     });
+    this.hudSoundBtn.on("pointerover", () => this.hudSoundBtn.setAlpha(0.75));
+    this.hudSoundBtn.on("pointerout",  () => this.hudSoundBtn.setAlpha(1.0));
 
     // Start Entrance Marker
     this.add.text(SPAWN_X, SPAWN_Y - 45, "🛕 TEMPLE GARDEN ENTRANCE", {
@@ -858,30 +933,30 @@ export default class Level1Scene extends Phaser.Scene {
     ).setInteractive();
 
     const cardW = 460;
-    const cardH = 410;
+    const cardH = 520;
     const card = this.add.rectangle(
       this.scale.width / 2, this.scale.height / 2, cardW, cardH, 0x241208, 0.96
     );
     card.setStrokeStyle(3, 0xffd700);
 
-    const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 150, "⏸️ GAME PAUSED", {
-      fontSize: "28px", fontStyle: "bold", color: "#ffd700",
+    const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, "⏸️  PAUSED", {
+      fontSize: "30px", fontStyle: "bold", color: "#ffd700",
       stroke: "#3d1f00", strokeThickness: 4,
     }).setOrigin(0.5);
 
-    this.pauseStatsText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 75, "", {
-      fontSize: "16px", color: "#ffffff",
+    this.pauseStatsText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 120, "", {
+      fontSize: "15px", color: "#ffffff",
       backgroundColor: "#1c0d05aa",
       padding: { x: 20, y: 10 }, align: "center", lineSpacing: 6,
     }).setOrigin(0.5);
 
-    const resumeBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 15, "▶️  Resume Game", {
+    const resumeBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 - 30, "▶️  Resume Game", {
       fontSize: "18px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#d84315", padding: { x: 28, y: 9 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     resumeBtn.on("pointerdown", () => this.togglePause());
 
-    const restartBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 70, "🔄  Restart Level", {
+    const restartBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 25, "🔄  Restart Level", {
       fontSize: "18px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#4e342e", padding: { x: 28, y: 9 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -890,17 +965,36 @@ export default class Level1Scene extends Phaser.Scene {
       this.scene.restart();
     });
 
-    this.pauseAudioBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 125, "🔊  Audio: ON", {
+    this.pauseAudioBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 80, "🔊  Audio: ON", {
       fontSize: "16px", fontStyle: "bold", color: "#ffffff",
       backgroundColor: "#37474f", padding: { x: 22, y: 8 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     this.pauseAudioBtn.on("pointerdown", () => {
       const isMuted = this.soundFX.toggleMute();
       this.pauseAudioBtn.setText(isMuted ? "🔇  Audio: OFF" : "🔊  Audio: ON");
-      if (this.hudAudioBtn) this.hudAudioBtn.setText(isMuted ? "🔇 SOUND" : "🔊 SOUND");
     });
 
-    const menuBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 172, "🏠  Main Menu", {
+    this.pauseFSBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 130, "⛶  Fullscreen", {
+      fontSize: "16px", fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#1565c0", padding: { x: 22, y: 8 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    this.pauseFSBtn.on("pointerdown", () => {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().then(() => {
+            this.pauseFSBtn.setText("🗗  Exit Fullscreen");
+          }).catch(() => {});
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().then(() => {
+            this.pauseFSBtn.setText("⛶  Fullscreen");
+          }).catch(() => {});
+        }
+      }
+    });
+
+    const menuBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 185, "🏠  Main Menu", {
       fontSize: "16px", fontStyle: "bold", color: "#b0bec5",
       backgroundColor: "#212121", padding: { x: 22, y: 7 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -909,7 +1003,7 @@ export default class Level1Scene extends Phaser.Scene {
       window.dispatchEvent(new CustomEvent("nav-home"));
     });
 
-    this.pauseContainer.add([overlay, card, title, this.pauseStatsText, resumeBtn, restartBtn, this.pauseAudioBtn, menuBtn]);
+    this.pauseContainer.add([overlay, card, title, this.pauseStatsText, resumeBtn, restartBtn, this.pauseAudioBtn, this.pauseFSBtn, menuBtn]);
   }
 
   togglePause() {
@@ -964,7 +1058,20 @@ export default class Level1Scene extends Phaser.Scene {
   //  COLLECT ITEM
   // ═══════════════════════════════════════════
   onCollect(player, item) {
-    this.score     += item.pointValue;
+    // ── Combo Streak ──────────────────────────────────────
+    const now = this.time.now;
+    const COMBO_WINDOW = 3500; // ms between pickups to maintain streak
+    if (now - this.lastCollectTime < COMBO_WINDOW) {
+      this.comboCount = Math.min(this.comboCount + 1, 8);
+    } else {
+      this.comboCount = 1;
+    }
+    this.lastCollectTime = now;
+
+    // Combo multiplier on score (x1 → x2 → x3 etc.)
+    const comboMultiplier = 1 + Math.floor(this.comboCount / 2) * 0.5;
+    const earnedPoints = Math.round(item.pointValue * comboMultiplier);
+    this.score     += earnedPoints;
     this.collected += 1;
     this.soundFX.playCollect();
 
@@ -990,19 +1097,48 @@ export default class Level1Scene extends Phaser.Scene {
     }
 
     // Floating score label
-    const floatLabel = this.add.text(ix, iy - 16, `${item.itemEmoji} +${item.pointValue}`, {
+    const comboLabel = this.comboCount >= 2 ? ` ⚡x${this.comboCount}` : "";
+    const floatLabel = this.add.text(ix, iy - 16, `${item.itemEmoji} +${earnedPoints}${comboLabel}`, {
       fontSize: "19px", fontStyle: "bold",
-      color: "#ffffff", stroke: "#2d1600", strokeThickness: 4,
+      color: this.comboCount >= 3 ? "#ffd700" : "#ffffff",
+      stroke: "#2d1600", strokeThickness: 4,
     }).setOrigin(0.5).setDepth(360);
 
     this.tweens.add({
       targets: floatLabel,
-      y: iy - 70, alpha: 0, scale: 1.25,
+      y: iy - 80, alpha: 0, scale: this.comboCount >= 2 ? 1.45 : 1.25,
       duration: 900, ease: "Cubic.easeOut",
       onComplete: () => floatLabel.destroy(),
     });
 
-    this.scoreText.setText(`⭐ SCORE: ${this.score}`);
+    // ── Divine Sprint Boost (combo ≥ 3) ─────────────────────
+    if (this.comboCount >= 3 && !this.sprintActive) {
+      this.sprintActive = true;
+      if (this.sprintTimer) this.sprintTimer.remove();
+      this.sprintTimer = this.time.delayedCall(2500, () => { this.sprintActive = false; });
+
+      // Sprint banner
+      const sprintBanner = this.add.text(
+        this.scale.width / 2, 165,
+        `⚡ DIVINE SPEED! x${(1 + Math.floor(this.comboCount / 2) * 0.5).toFixed(1)} Combo Bonus!`,
+        { fontSize: "17px", fontStyle: "bold", color: "#ffd700",
+          stroke: "#3d1f00", strokeThickness: 4,
+          backgroundColor: "#2d1700cc", padding: { x: 14, y: 5 } }
+      ).setOrigin(0.5).setScrollFactor(0).setDepth(505);
+
+      this.tweens.add({
+        targets: sprintBanner, alpha: 0, y: 140,
+        duration: 1800, delay: 700, ease: "Sine.easeIn",
+        onComplete: () => sprintBanner.destroy(),
+      });
+    }
+
+    this.scoreText.setText(this.score.toString());
+
+    if (this.score > this.storedBest) {
+      this.storedBest = this.score;
+      if (this.bestScoreText) this.bestScoreText.setText(this.score.toString());
+    }
 
     // Update tracker badge
     const t = this.tracker[item.itemEmoji];
@@ -1077,7 +1213,12 @@ export default class Level1Scene extends Phaser.Scene {
       onComplete: () => floatLabel.destroy(),
     });
 
-    this.scoreText.setText(`⭐ SCORE: ${this.score}`);
+    this.scoreText.setText(this.score.toString());
+
+    if (this.score > this.storedBest) {
+      this.storedBest = this.score;
+      if (this.bestScoreText) this.bestScoreText.setText(this.score.toString());
+    }
 
     this.tweens.add({
       targets: waste,
@@ -1300,6 +1441,8 @@ export default class Level1Scene extends Phaser.Scene {
 
     this.soundFX.stopBGM();
     this.soundFX.playVictory();
+    // Aarti blessing chimes 1.2s after victory fanfare starts
+    this.time.delayedCall(1200, () => this.soundFX.playAartiBlessing());
 
     // Devotee enters sanctum and bows respectfully
     this.tweens.add({
@@ -1409,6 +1552,20 @@ export default class Level1Scene extends Phaser.Scene {
       targets: titleText, scale: 1, duration: 450, ease: "Back.easeOut",
     });
 
+    // Sacred Blessing Banner
+    const blessingText = stars === 3
+      ? "🙏 Ganpati Bappa Morya! 🙏\nMay Lord Ganesha bless you with wisdom,\npeace, and auspicious new beginnings."
+      : "🙏 Ganpati Bappa Morya! 🙏\nThe sacred offerings have been placed.\nLord Ganesha accepts your devotion.";
+    const blessingLabel = this.add.text(
+      this.scale.width / 2, this.scale.height / 2 - 162, blessingText, {
+        fontSize: "13px", fontStyle: "italic", color: "#ffe0b2",
+        stroke: "#2a1000", strokeThickness: 2,
+        backgroundColor: "#3e1a00aa", padding: { x: 14, y: 6 },
+        align: "center",
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setAlpha(0);
+    this.tweens.add({ targets: blessingLabel, alpha: 1, duration: 900, delay: 500 });
+
     // Subtitle
     this.add.text(
       this.scale.width / 2, this.scale.height / 2 - 170, starTitle, {
@@ -1470,6 +1627,7 @@ export default class Level1Scene extends Phaser.Scene {
     try {
       const best = parseInt(localStorage.getItem("ganesha_high_score") || "0", 10);
       if (finalScore > best) localStorage.setItem("ganesha_high_score", finalScore.toString());
+      localStorage.setItem("ganesha_last_score", finalScore.toString());
       localStorage.setItem("ganesha_stars", Math.max(stars, parseInt(localStorage.getItem("ganesha_stars") || "0", 10)).toString());
       saveScore(enteredName || "Festival Volunteer", finalScore, stars, this.timeLeft);
     } catch (e) {}
@@ -1565,7 +1723,8 @@ export default class Level1Scene extends Phaser.Scene {
   update() {
     if (this.isGamePaused || this.gameOver || this.levelComplete) return;
 
-    const speed = 220;
+    // Divine Sprint: boost speed when active after a combo
+    const speed = this.sprintActive ? 290 : 220;
     let vx = 0;
     let vy = 0;
     let moving = false;

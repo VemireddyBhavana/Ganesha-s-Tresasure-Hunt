@@ -1,10 +1,54 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTopScores } from "../../firebase/leaderboard";
 import "./Home.css";
 
+function requestFullscreenSafe() {
+  if (!document.fullscreenElement) {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch {}
+  }
+}
+
+function useHudScores() {
+  const [best] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem("ganesha_high_score") || "0", 10) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [last] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem("ganesha_last_score") || "0", 10) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  return { best, last };
+}
+
+function HudCard({ side, icon, value, label }) {
+  return (
+    <div className={`home-hud-corner home-hud-${side}`}>
+      <span className="corner-bl" />
+      <span className="corner-br" />
+      <span className="home-hud-icon">{icon}</span>
+      <div className="home-hud-text">
+        <span className="home-hud-value">{value.toLocaleString()}</span>
+        <span className="home-hud-label">{label}</span>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const navigate = useNavigate();
+  const { best, last } = useHudScores();
+
   const [activeModal, setActiveModal] = useState(() => {
     const modal = sessionStorage.getItem("open_modal");
     if (modal) {
@@ -15,29 +59,43 @@ function Home() {
   });
   const [leaderboardScores, setLeaderboardScores] = useState([]);
   const [loadingScores, setLoadingScores] = useState(false);
+  const scoresRef = useRef(false);
 
   useEffect(() => {
-    if (activeModal === "leaderboard") {
+    if (activeModal === "leaderboard" && !scoresRef.current) {
+      scoresRef.current = true;
       setLoadingScores(true);
       getTopScores(6)
         .then((res) => {
           setLeaderboardScores(res);
           setLoadingScores(false);
         })
-        .catch(() => setLoadingScores(false));
+        .catch(() => setLoadingScores(false))
+        .finally(() => {
+          setTimeout(() => { scoresRef.current = false; }, 1200);
+        });
     }
   }, [activeModal]);
 
+  const startGame = () => {
+    requestFullscreenSafe();
+    setTimeout(() => navigate("/game"), 120);
+  };
+
   return (
     <div className="home">
+      <HudCard side="left" icon="🍬" value={last} label="LAST PRASAD" />
+      <HudCard side="right" icon="🏆" value={best} label="BEST SCORE" />
+
       <div className="overlay">
         <h1>🛕</h1>
-        <h2>Ganesha's Treasure Hunt</h2>
+        <h2>Ganesha&apos;s Treasure Hunt</h2>
         <p>The Sacred Modak Quest</p>
+        <div className="festival-tag">✦  GANESH CHATURTHI SPECIAL  ✦</div>
 
         <div className="menu">
-          <button onClick={() => navigate("/game")}>
-            ▶ Start Game
+          <button onClick={startGame}>
+            ▶ PLAY
           </button>
           <button onClick={() => navigate("/story")}>
             📖 Story
@@ -104,7 +162,7 @@ function Home() {
                       const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}.`;
                       const isTop = idx < 3;
                       return (
-                        <div key={entry.id || idx} className={`leaderboard-row ${isTop ? "top" : ""}`}>
+                        <div key={`${entry.id || "entry"}-${idx}`} className={`leaderboard-row ${isTop ? "top" : ""}`}>
                           <span>{medal} {entry.playerName}</span>
                           <span>{entry.score.toLocaleString()} pts</span>
                         </div>
@@ -122,6 +180,7 @@ function Home() {
                   <p>🎵 Festival BGM: <strong>Enabled</strong></p>
                   <p>🔔 Puja Bell Effects: <strong>Enabled</strong></p>
                   <p>⌨️ Controls: <strong>WASD + Arrow Keys</strong></p>
+                  <p>🖥️ Fullscreen: <strong>Auto on PLAY (ESC to exit)</strong></p>
                 </div>
               </div>
             )}
