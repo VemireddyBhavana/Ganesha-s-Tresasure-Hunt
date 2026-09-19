@@ -2,6 +2,7 @@ import Phaser from "phaser";
 
 import templeGardenBg from "../../assets/images/backgrounds/temple_garden.png";
 import playerImg from "../../assets/images/characters/player_idle.png";
+import playerSpriteSheet from "../../assets/images/characters/player_spritesheet.png";
 import flowerImg from "../../assets/images/collectibles/flower.png";
 import modakImg from "../../assets/images/collectibles/modak.png";
 import durvaImg from "../../assets/images/collectibles/durva.png";
@@ -55,7 +56,10 @@ export default class PreloadScene extends Phaser.Scene {
     });
 
     // Load Game Assets
-    this.load.image("player", playerImg);
+    this.load.spritesheet("player", playerSpriteSheet, {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
     this.load.image("player_idle", playerImg);
     this.load.image("temple", templeGardenBg);
     this.load.image("temple_garden_bg", templeGardenBg);

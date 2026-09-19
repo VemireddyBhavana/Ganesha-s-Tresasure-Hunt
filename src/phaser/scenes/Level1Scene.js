@@ -429,60 +429,120 @@ export default class Level1Scene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // ─────────────────────────────────────
-    //  COLLECTIBLES (Sprites + Glows + Labels)
+    //  COLLECTIBLES (Shadows + Floating + Glow)
     // ─────────────────────────────────────
     this.collectiblesGroup = this.physics.add.staticGroup();
 
     COLLECTIBLES.forEach((item) => {
-      // Pulsing glow aura
-      const glow = this.add.circle(item.x, item.y, 22, item.color, 0.3);
+      // 1. Soft ground shadow under collectible
+      const shadow = this.add.ellipse(item.x, item.y + 14, 28, 12, 0x000000, 0.28).setDepth(45);
+
+      // 2. Pulsing glow aura
+      const glow = this.add.circle(item.x, item.y, 22, item.color, 0.25).setDepth(48);
       this.tweens.add({
-        targets: glow, scaleX: 1.4, scaleY: 1.4, alpha: 0.08,
-        duration: 900 + Phaser.Math.Between(0, 400),
+        targets: glow, scaleX: 1.35, scaleY: 1.35, alpha: 0.12,
+        duration: 900 + Phaser.Math.Between(0, 300),
         yoyo: true, repeat: -1, ease: "Sine.easeInOut",
       });
 
-      // Real sprite for collectible
-      const flower = this.physics.add.image(item.x, item.y, item.texture);
-      flower.setScale(0.18);
+      // 3. Real sprite for collectible with gentle floating bob
+      const flower = this.physics.add.image(item.x, item.y, item.texture).setDepth(50);
+      flower.setScale(0.24);
       this.physics.add.existing(flower, true);
 
-      // Emoji label above
+      this.tweens.add({
+        targets: flower,
+        y: item.y - 7,
+        duration: 850 + Phaser.Math.Between(0, 300),
+        yoyo: true, repeat: -1, ease: "Sine.easeInOut",
+      });
+
+      // Shadow breathes along with float
+      this.tweens.add({
+        targets: shadow,
+        scaleX: 0.85, scaleY: 0.85, alpha: 0.18,
+        duration: 850 + Phaser.Math.Between(0, 300),
+        yoyo: true, repeat: -1, ease: "Sine.easeInOut",
+      });
+
+      // 4. Emoji label above
       const label = this.add.text(item.x, item.y - 28, item.emoji, {
         fontSize: "18px",
-      }).setOrigin(0.5);
+      }).setOrigin(0.5).setDepth(55);
 
       this.tweens.add({
         targets: label,
         y: item.y - 35,
-        duration: 800 + Phaser.Math.Between(0, 300),
+        duration: 850 + Phaser.Math.Between(0, 300),
         yoyo: true, repeat: -1, ease: "Sine.easeInOut",
       });
 
-      // Metadata for collection
+      // Metadata for collection & proximity
       flower.pointValue = item.points;
       flower.itemEmoji  = item.emoji;
       flower.glowRef    = glow;
       flower.labelRef   = label;
+      flower.shadowRef  = shadow;
 
       this.collectiblesGroup.add(flower);
     });
     this.collectiblesGroup.refresh();
 
     // ─────────────────────────────────────
-    //  PLAYER (Real Sprite Character)
+    //  ANIMATIONS (Walking & Idle 20-frame Spritesheet)
+    // ─────────────────────────────────────
+    if (!this.anims.exists("walk-down")) {
+      this.anims.create({
+        key: "walk-down",
+        frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+    if (!this.anims.exists("walk-left")) {
+      this.anims.create({
+        key: "walk-left",
+        frames: this.anims.generateFrameNumbers("player", { start: 4, end: 7 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+    if (!this.anims.exists("walk-right")) {
+      this.anims.create({
+        key: "walk-right",
+        frames: this.anims.generateFrameNumbers("player", { start: 8, end: 11 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+    if (!this.anims.exists("walk-up")) {
+      this.anims.create({
+        key: "walk-up",
+        frames: this.anims.generateFrameNumbers("player", { start: 12, end: 15 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+    if (!this.anims.exists("idle")) {
+      this.anims.create({
+        key: "idle",
+        frames: this.anims.generateFrameNumbers("player", { start: 16, end: 19 }),
+        frameRate: 4,
+        repeat: -1,
+      });
+    }
+
+    // ─────────────────────────────────────
+    //  PLAYER (Upgraded Scale 1.35x & Animated Spritesheet)
     // ─────────────────────────────────────
     this.player = this.physics.add.sprite(200, 200, "player");
-    this.player.setScale(0.4);
+    this.player.setScale(1.35);
     this.player.body.setCollideWorldBounds(true);
-    this.player.body.setSize(40, 40, true);
-
-    // ── Walking bob tween (simulates walk cycle without a spritesheet) ──
-    this._walkBobTween = null;
+    this.player.body.setSize(26, 28);
+    this.player.body.setOffset(19, 32);
+    this.player.setDepth(150);
+    this.player.anims.play("idle", true);
     this._lastDir = "down";
-    this._isMoving = false;
-    this._bobPhase = 0;
-    this._setupWalkBob();
 
     // ─────────────────────────────────────
     //  PHYSICS EVENTS
@@ -529,6 +589,39 @@ export default class Level1Scene extends Phaser.Scene {
     this.keyEsc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
     this.keyEsc.on("down", () => this.togglePause());
 
+    // Debug hotkeys: 'U' for Unlock Gate, 'V' for Victory
+    const keyU = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.U);
+    keyU.on("down", () => {
+      this.collected = this.totalItems;
+      this.openTempleGate();
+    });
+    const keyV = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V);
+    keyV.on("down", () => {
+      this.allCollected = true;
+      this.onReachTemple();
+    });
+
+    // Expose scene globally for dev & verification
+    window.__level1Scene = this;
+
+    // Automated query param triggers for previewing cinematic
+    if (typeof window !== "undefined" && window.location.search) {
+      if (window.location.search.includes("unlock=true")) {
+        this.time.delayedCall(1200, () => {
+          this.collected = this.totalItems;
+          this.openTempleGate();
+        });
+      } else if (window.location.search.includes("win=true")) {
+        this.time.delayedCall(1200, () => {
+          this.collected = this.totalItems;
+          this.openTempleGate();
+          this.time.delayedCall(6500, () => {
+            this.onReachTemple();
+          });
+        });
+      }
+    }
+
     // Start background music on user click or touch
     this.input.on("pointerdown", () => {
       if (!this.soundFX.bgmPlaying && !this.soundFX.isMuted) {
@@ -551,21 +644,33 @@ export default class Level1Scene extends Phaser.Scene {
     // ─────────────────────────────────────
     this.isGamePaused = false;
 
+    // 0. Top-Left Navigation (In-game Home button)
+    this.hudHomeBtn = this.add.text(64, 22, "⬅ HOME", {
+      fontSize: "13px", fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#3e2723", padding: { x: 10, y: 5 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true });
+    this.hudHomeBtn.on("pointerdown", () => {
+      this.soundFX.stopBGM();
+      window.dispatchEvent(new CustomEvent("nav-home"));
+    });
+    this.hudHomeBtn.on("pointerover", () => this.hudHomeBtn.setStyle({ color: "#ffd700", backgroundColor: "#5d4037" }));
+    this.hudHomeBtn.on("pointerout", () => this.hudHomeBtn.setStyle({ color: "#ffffff", backgroundColor: "#3e2723" }));
+
     // 1. Top-Left Player Vitals Card
-    this.add.rectangle(126, 62, 224, 100, 0x1d1007, 0.90)
+    this.add.rectangle(126, 92, 224, 94, 0x1d1007, 0.90)
       .setStrokeStyle(2, 0xffd700, 0.9)
       .setScrollFactor(0).setDepth(200);
 
-    this.scoreText = this.add.text(26, 22, "⭐ SCORE: 0", {
+    this.scoreText = this.add.text(26, 52, "⭐ SCORE: 0", {
       fontSize: "19px", fontStyle: "bold", color: "#ffd700",
       stroke: "#2a1500", strokeThickness: 3,
     }).setScrollFactor(0).setDepth(201);
 
-    this.livesText = this.add.text(26, 52, "❤️ ❤️ ❤️", {
+    this.livesText = this.add.text(26, 80, "❤️ ❤️ ❤️", {
       fontSize: "18px", color: "#ff4d4d",
     }).setScrollFactor(0).setDepth(201);
 
-    this.timerText = this.add.text(26, 82, `⏱️ TIME: ${TIME_LIMIT}s`, {
+    this.timerText = this.add.text(26, 108, `⏱️ TIME: ${TIME_LIMIT}s`, {
       fontSize: "16px", fontStyle: "bold", color: "#64b5f6",
       stroke: "#001a33", strokeThickness: 2,
     }).setScrollFactor(0).setDepth(201);
@@ -626,6 +731,27 @@ export default class Level1Scene extends Phaser.Scene {
     });
     this.hudAudioBtn.on("pointerover", () => this.hudAudioBtn.setStyle({ color: "#ffd700" }));
     this.hudAudioBtn.on("pointerout", () => this.hudAudioBtn.setStyle({ color: "#ffffff" }));
+
+    // Fullscreen toggle button
+    this.hudFullscreenBtn = this.add.text(this.scale.width - 76, 114, "⛶ FULL", {
+      fontSize: "13px", fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#2e3b44", padding: { x: 10, y: 6 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true });
+    this.hudFullscreenBtn.on("pointerdown", () => {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen();
+          this.hudFullscreenBtn.setText("🗗 EXIT");
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+          this.hudFullscreenBtn.setText("⛶ FULL");
+        }
+      }
+    });
+    this.hudFullscreenBtn.on("pointerover", () => this.hudFullscreenBtn.setStyle({ color: "#ffd700" }));
+    this.hudFullscreenBtn.on("pointerout", () => this.hudFullscreenBtn.setStyle({ color: "#ffffff" }));
 
     // Spawn label (world space)
     this.add.text(SPAWN_X, SPAWN_Y - 42, "▼ START", {
@@ -822,24 +948,6 @@ export default class Level1Scene extends Phaser.Scene {
   }
 
   // ═══════════════════════════════════════════
-  //  WALK BOB SETUP  (called once in create)
-  // ═══════════════════════════════════════════
-  _setupWalkBob() {
-    // We animate scale on Y to create a squat-bounce that reads as walking.
-    // The tween loops and is paused/resumed depending on movement.
-    this._walkBobTween = this.tweens.add({
-      targets: this.player,
-      scaleY: { from: 0.4, to: 0.37 },
-      scaleX: { from: 0.4, to: 0.42 },
-      duration: 160,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-      paused: true,
-    });
-  }
-
-  // ═══════════════════════════════════════════
   //  TIMER TICK
   // ═══════════════════════════════════════════
   onTick() {
@@ -981,9 +1089,31 @@ export default class Level1Scene extends Phaser.Scene {
       duration: 220, ease: "Sine.easeOut",
     });
 
-    item.glowRef.destroy();
-    item.labelRef.destroy();
-    item.destroy();
+    if (item.shadowRef) {
+      this.tweens.add({
+        targets: item.shadowRef,
+        alpha: 0,
+        scaleX: 0,
+        scaleY: 0,
+        duration: 200,
+        onComplete: () => item.shadowRef.destroy(),
+      });
+    }
+
+    // Smooth item shrink and fade out
+    this.tweens.add({
+      targets: [item, item.glowRef, item.labelRef],
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      duration: 220,
+      ease: "Back.easeIn",
+      onComplete: () => {
+        if (item.glowRef) item.glowRef.destroy();
+        if (item.labelRef) item.labelRef.destroy();
+        item.destroy();
+      },
+    });
 
     if (this.collected === this.totalItems) {
       this.openTempleGate();
@@ -991,45 +1121,232 @@ export default class Level1Scene extends Phaser.Scene {
   }
 
   // ═══════════════════════════════════════════
-  //  OPEN TEMPLE GATE
+  //  OPEN TEMPLE GATE (Cinematic 5-Step Sequence)
   // ═══════════════════════════════════════════
   openTempleGate() {
+    if (this.allCollected) return;
     this.allCollected = true;
 
-    // Divine temple bell & gong sound
-    this.soundFX.playGateOpen();
+    // Pause timer during the cinematic sequence
+    if (this.timerEvent) this.timerEvent.paused = true;
+    this.player.body.setVelocity(0);
+    this.player.anims.play("idle", true);
 
-    // Remove gate collision & visuals
-    this.physics.world.removeCollider(this.gateCollider);
-    this.tweens.add({
-      targets: [this.gateBar, this.gateLockText],
-      alpha: 0, duration: 600,
-      onComplete: () => {
-        this.gateBar.destroy();
-        this.gateLockText.destroy();
-      },
-    });
+    // ── STEP 1: Announce All Sacred Offerings Collected (2 seconds) ──
+    const dimBg = this.add.rectangle(
+      this.scale.width / 2, this.scale.height / 2,
+      this.scale.width, this.scale.height,
+      0x000000, 0.55
+    ).setScrollFactor(0).setDepth(750).setAlpha(0);
 
-    // Gate open banner
-    const banner = this.add
-      .text(this.scale.width / 2, this.scale.height / 2 - 30,
-        "🎉 All offerings collected!\n🛕 Temple Gate OPEN — hurry!", {
-        fontSize: "26px", fontStyle: "bold", color: "#ffffff",
-        backgroundColor: "#e65100ee", padding: { x: 20, y: 14 },
+    this.tweens.add({ targets: dimBg, alpha: 0.55, duration: 400 });
+
+    const bannerText = this.add.text(
+      this.scale.width / 2, this.scale.height / 2,
+      "✨ All Sacred Offerings Collected! ✨",
+      {
+        fontSize: "26px",
+        fontStyle: "bold",
+        color: "#ffd700",
+        stroke: "#3e1700",
+        strokeThickness: 5,
+        backgroundColor: "#1f0c03ee",
+        padding: { x: 28, y: 16 },
         align: "center",
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(500);
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(760).setScale(0.2);
 
-    // Auto-hide banner after 3s
-    this.time.delayedCall(3000, () => {
-      this.tweens.add({ targets: banner, alpha: 0, duration: 600,
-        onComplete: () => banner.destroy() });
+    this.tweens.add({
+      targets: bannerText,
+      scale: 1,
+      duration: 500,
+      ease: "Back.easeOut",
     });
 
-    // Golden temple glow
-    this.tweens.add({
-      targets: this.player, alpha: 0.6,
-      duration: 200, yoyo: true, repeat: 3,
+    // ── STEP 2: Play Temple Bell Sound (at 800ms) ──
+    this.time.delayedCall(800, () => {
+      this.soundFX.playGateOpen();
+      this.cameras.main.shake(250, 0.006);
+    });
+
+    // ── STEP 3: Temple Glow & Camera Pan to Temple (at 2000ms) ──
+    this.time.delayedCall(2000, () => {
+      // Fade out Step 1 banner & dimming
+      this.tweens.add({
+        targets: [bannerText, dimBg],
+        alpha: 0,
+        duration: 400,
+        onComplete: () => {
+          bannerText.destroy();
+          dimBg.destroy();
+        },
+      });
+
+      // Pan camera smoothly to temple
+      this.cameras.main.stopFollow();
+      this.cameras.main.pan(TEMPLE_X, TEMPLE_Y, 1400, "Sine.easeInOut");
+
+      // Radiate 16 divine golden light rays from temple
+      for (let i = 0; i < 16; i++) {
+        const angle = (i / 16) * Math.PI * 2;
+        const ray = this.add.line(
+          TEMPLE_X, 1155,
+          0, 0,
+          Math.cos(angle) * 160,
+          Math.sin(angle) * 160,
+          0xffd700, 0.95
+        ).setLineWidth(4).setDepth(210);
+
+        this.tweens.add({
+          targets: ray,
+          scaleX: 2.4,
+          scaleY: 2.4,
+          alpha: 0,
+          duration: 1600,
+          ease: "Cubic.easeOut",
+          onComplete: () => ray.destroy(),
+        });
+      }
+
+      // Golden light aura circles around temple
+      this._templeGlowOuter = this.add.circle(TEMPLE_X, 1155, 60, 0xffd700, 0.35).setDepth(205);
+      this.tweens.add({
+        targets: this._templeGlowOuter,
+        scaleX: 2.2,
+        scaleY: 2.2,
+        alpha: 0.15,
+        duration: 1200,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+
+      this._templeGlowInner = this.add.circle(TEMPLE_X, 1155, 30, 0xffeb3b, 0.6).setDepth(206);
+      this.tweens.add({
+        targets: this._templeGlowInner,
+        scaleX: 1.6,
+        scaleY: 1.6,
+        alpha: 0.3,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    });
+
+    // ── STEP 4: Temple Gate Opens (at 3500ms) ──
+    this.time.delayedCall(3500, () => {
+      // Golden camera flash
+      this.cameras.main.flash(600, 255, 215, 0);
+
+      // Remove physical blocking collider
+      if (this.gateCollider) {
+        this.physics.world.removeCollider(this.gateCollider);
+        this.gateCollider = null;
+      }
+
+      // Hide old single gate bar
+      if (this.gateBar) {
+        this.gateBar.setVisible(false);
+      }
+
+      // Ornate double gate doors sliding apart cinematically
+      const leftDoor = this.add.rectangle(TEMPLE_X - 50, 1155, 100, 18, 0xd84315).setDepth(215);
+      leftDoor.setStrokeStyle(3, 0xffd700);
+      const rightDoor = this.add.rectangle(TEMPLE_X + 50, 1155, 100, 18, 0xd84315).setDepth(215);
+      rightDoor.setStrokeStyle(3, 0xffd700);
+
+      this.tweens.add({
+        targets: leftDoor,
+        x: TEMPLE_X - 160,
+        alpha: 0,
+        duration: 1200,
+        ease: "Cubic.easeInOut",
+        onComplete: () => leftDoor.destroy(),
+      });
+
+      this.tweens.add({
+        targets: rightDoor,
+        x: TEMPLE_X + 160,
+        alpha: 0,
+        duration: 1200,
+        ease: "Cubic.easeInOut",
+        onComplete: () => rightDoor.destroy(),
+      });
+
+      // Update gate text
+      if (this.gateLockText) {
+        this.gateLockText.setText("✨ Gate OPEN! Enter Sanctum ✨");
+        this.gateLockText.setStyle({ color: "#2e7d32", backgroundColor: "#e8f5e9ee" });
+        this.tweens.add({
+          targets: this.gateLockText,
+          y: 1105,
+          alpha: 0,
+          duration: 2500,
+          onComplete: () => {
+            if (this.gateLockText) this.gateLockText.destroy();
+          },
+        });
+      }
+    });
+
+    // ── STEP 5: Guide the Player & Return Camera (at 4800ms) ──
+    this.time.delayedCall(4800, () => {
+      // Pan camera back to devotee
+      this.cameras.main.pan(
+        this.player.x, this.player.y,
+        1200, "Sine.easeInOut",
+        false,
+        (camera, progress) => {
+          if (progress === 1) {
+            this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+          }
+        }
+      );
+
+      // Resume timer
+      if (this.timerEvent) this.timerEvent.paused = false;
+
+      // Guide banner at bottom of screen
+      this._guideBanner = this.add.text(
+        this.scale.width / 2, this.scale.height - 42,
+        "🛕 The Temple is now open! Go to Lord Ganesha's Temple. 🛕",
+        {
+          fontSize: "16px",
+          fontStyle: "bold",
+          color: "#ffffff",
+          backgroundColor: "#d84315ee",
+          padding: { x: 22, y: 8 },
+        }
+      ).setOrigin(0.5).setScrollFactor(0).setDepth(500);
+
+      this.tweens.add({
+        targets: this._guideBanner,
+        alpha: 0.6,
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+
+      // Arrow indicator pointing to temple
+      this._templeArrow = this.add.text(this.player.x, this.player.y, "➤", {
+        fontSize: "26px",
+        fontStyle: "bold",
+        color: "#ffd700",
+        stroke: "#3d1f00",
+        strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(260);
+
+      this.tweens.add({
+        targets: this._templeArrow,
+        scaleX: 1.3,
+        scaleY: 1.3,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
     });
   }
 
@@ -1089,30 +1406,111 @@ export default class Level1Scene extends Phaser.Scene {
   }
 
   // ═══════════════════════════════════════════
-  //  REACH TEMPLE (WIN)
+  //  REACH TEMPLE (WIN) — Step 6 & 7
   // ═══════════════════════════════════════════
   onReachTemple() {
     if (!this.allCollected || this.levelComplete || this.gameOver) return;
 
     this.levelComplete = true;
-    this.timerEvent.remove();
+    if (this.timerEvent) this.timerEvent.remove();
+
+    // Clean up guide indicators
+    if (this._guideBanner) {
+      this._guideBanner.destroy();
+      this._guideBanner = null;
+    }
+    if (this._templeArrow) {
+      this._templeArrow.destroy();
+      this._templeArrow = null;
+    }
+    if (this._templeGlowOuter) {
+      this._templeGlowOuter.destroy();
+      this._templeGlowOuter = null;
+    }
+    if (this._templeGlowInner) {
+      this._templeGlowInner.destroy();
+      this._templeGlowInner = null;
+    }
+
+    // ── STEP 6: Victory Trigger — Stop movement & enter sanctum ──
+    this.player.body.setVelocity(0);
+    this.cameras.main.stopFollow();
+    this.player.anims.play("walk-up", true);
+
+    // Stop background music & play divine victory music
     this.soundFX.stopBGM();
     this.soundFX.playVictory();
+
+    // Devotee walks respectfully up into the sanctum & fades
+    this.tweens.add({
+      targets: this.player,
+      y: TEMPLE_Y - 40,
+      alpha: 0,
+      duration: 1200,
+      ease: "Cubic.easeOut",
+    });
+
+    // Fade camera out
+    this.cameras.main.fade(1400, 0, 0, 0);
+
+    // After fade, transition to victory screen
+    this.time.delayedCall(1600, () => {
+      this.cameras.main.resetFX();
+      this._showVictoryScreen();
+    });
+  }
+
+  // ═══════════════════════════════════════════
+  //  VICTORY SCREEN MODAL (Step 7)
+  // ═══════════════════════════════════════════
+  _showVictoryScreen() {
+    // Launch flower petal showers & firework bursts
     this.launchCelebrationEffects();
 
-    // Bonus calculations
+    // Festive falling confetti / sacred offerings
+    const confettiEmojis = ["🌸", "🌼", "🌺", "✨", "🪔", "⭐", "🎉", "🟡"];
+    this.time.addEvent({
+      delay: 300,
+      repeat: 25,
+      callback: () => {
+        const x = Phaser.Math.Between(40, this.scale.width - 40);
+        const emoji = Phaser.Math.RND.pick(confettiEmojis);
+        const p = this.add
+          .text(x, -25, emoji, { fontSize: `${Phaser.Math.Between(18, 32)}px` })
+          .setScrollFactor(0).setDepth(680);
+        this.tweens.add({
+          targets: p,
+          y: this.scale.height + 40,
+          x: x + Phaser.Math.Between(-90, 90),
+          rotation: Phaser.Math.Between(-3, 3),
+          duration: Phaser.Math.Between(2200, 3500),
+          ease: "Quad.easeIn",
+          onComplete: () => p.destroy(),
+        });
+      },
+    });
+
+    // Score & Bonus Calculations
     const offeringsScore = this.score;
-    const timeBonus      = this.timeLeft * 2;
-    const livesBonus     = this.lives * 50;
+    const timeBonus      = Math.max(0, this.timeLeft * 2);
+    const livesBonus     = Math.max(0, this.lives * 50);
     const finalScore     = offeringsScore + timeBonus + livesBonus;
 
-    // 3-Star Rating System
+    const timeSpent = Math.max(0, TIME_LIMIT - this.timeLeft);
+    const mins = Math.floor(timeSpent / 60);
+    const secs = timeSpent % 60;
+    const timeFormatted = `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+
+    // 3-Star Rating System:
+    // ⭐⭐⭐: All offerings + >=2 lives + >=30s remaining
+    // ⭐⭐: All offerings collected + finish level
+    // ⭐: Reach the temple
     let stars = 1;
-    let starTitle = "⭐☆☆ OFFERINGS DELIVERED!";
-    if (this.lives === 3 && this.timeLeft >= 60) {
+    let starTitle = "⭐ REACHED THE TEMPLE!";
+    if (this.allCollected && this.lives >= 2 && this.timeLeft >= 30) {
       stars = 3;
       starTitle = "⭐⭐⭐ DIVINE BLESSING!";
-    } else if (this.lives >= 2 && this.timeLeft >= 30) {
+    } else if (this.allCollected) {
       stars = 2;
       starTitle = "⭐⭐☆ DEVOTED SEVA!";
     }
@@ -1129,123 +1527,155 @@ export default class Level1Scene extends Phaser.Scene {
       }
       saveScore("Festival Volunteer", finalScore, stars, this.timeLeft);
     } catch (e) {
-      // Fallback if disabled in private mode
+      // Ignore private browsing storage errors
     }
 
-    this.player.body.setVelocity(0);
-    this.cameras.main.stopFollow();
-    this.cameras.main.flash(700, 255, 215, 0); // Golden flash
-
-    // Dim overlay
+    // Modal Dim Overlay
     this.add.rectangle(
       this.scale.width / 2, this.scale.height / 2,
       this.scale.width, this.scale.height,
-      0x000000, 0.75
+      0x000000, 0.8
     ).setScrollFactor(0).setDepth(600);
 
     // Victory Modal Card Background
-    const cardW = 540;
-    const cardH = 460;
+    const cardW = 560;
+    const cardH = 510;
     const card = this.add.rectangle(
       this.scale.width / 2, this.scale.height / 2,
       cardW, cardH,
-      0x2e1a0e, 0.95
+      0x23140a, 0.96
     ).setScrollFactor(0).setDepth(650);
     card.setStrokeStyle(4, 0xffd700);
 
-    // Header title
+    this.tweens.add({
+      targets: card,
+      scaleX: 1.015,
+      scaleY: 1.015,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+
+    // 1. Header Title: "🏆 LEVEL COMPLETE! 🏆"
+    const titleText = this.add
+      .text(this.scale.width / 2, this.scale.height / 2 - 200,
+        "🏆 LEVEL COMPLETE! 🏆", {
+        fontSize: "30px", fontStyle: "bold", color: "#ffd700",
+        stroke: "#3d1f00", strokeThickness: 5,
+      })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0.2);
+
+    this.tweens.add({
+      targets: titleText,
+      scale: 1,
+      duration: 500,
+      ease: "Back.easeOut",
+    });
+
+    // Subtitle: Star Rank Title
     this.add
-      .text(this.scale.width / 2, this.scale.height / 2 - 180,
-        "🛕 Victory! Aarti is Saved! 🛕", {
-        fontSize: "28px", fontStyle: "bold", color: "#ffd700",
-        stroke: "#3d1f00", strokeThickness: 4,
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700);
-
-    // Star Rank Text
-    const starLabel = this.add
-      .text(this.scale.width / 2, this.scale.height / 2 - 130,
+      .text(this.scale.width / 2, this.scale.height / 2 - 155,
         starTitle, {
-        fontSize: "22px", fontStyle: "bold", color: "#ffecb3",
+        fontSize: "20px", fontStyle: "bold", color: "#ffecb3",
       })
       .setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // Animated Star Icons popping in
-    const starIcons = [];
-    const starSpacing = 50;
+    // 2. Animated Star Badges (⭐⭐⭐)
+    const starSpacing = 65;
     for (let i = 0; i < 3; i++) {
       const isEarned = i < stars;
       const starChar = isEarned ? "⭐" : "☆";
-      const s = this.add
-        .text(this.scale.width / 2 + (i - 1) * starSpacing, this.scale.height / 2 - 85,
-          starChar, { fontSize: "36px" })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0);
+      const starColor = isEarned ? "#ffd700" : "#757575";
 
-      starIcons.push(s);
+      const s = this.add
+        .text(this.scale.width / 2 + (i - 1) * starSpacing, this.scale.height / 2 - 105,
+          starChar, { fontSize: "44px", color: starColor })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0);
 
       this.tweens.add({
         targets: s,
-        scale: 1.2,
-        duration: 350,
-        delay: 200 + i * 200,
+        scale: 1.25,
+        duration: 380,
+        delay: 250 + i * 200,
         ease: "Back.easeOut",
         onComplete: () => {
           this.tweens.add({ targets: s, scale: 1.0, duration: 150 });
-        }
+          if (isEarned) {
+            const flash = this.add.circle(s.x, s.y, 24, 0xffd700, 0.7)
+              .setScrollFactor(0).setDepth(690);
+            this.tweens.add({
+              targets: flash,
+              scale: 2,
+              alpha: 0,
+              duration: 400,
+              onComplete: () => flash.destroy(),
+            });
+          }
+        },
       });
     }
 
-    // Score Breakdown
+    // 3. Stats Breakdown
     const statsText =
-      `🌸 Offerings: ${offeringsScore} pts\n` +
-      `⏱️ Time Bonus (${this.timeLeft}s left): +${timeBonus} pts\n` +
+      `🌸 Sacred Offerings: ${this.collected} / ${this.totalItems} (+${offeringsScore} pts)\n` +
+      `⏱️ Time Left: ${this.timeLeft}s (${timeFormatted}) (+${timeBonus} pts)\n` +
       `❤️ Devotion Bonus (${this.lives} lives): +${livesBonus} pts\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `🏆 Total Score: ${finalScore} pts`;
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `🏆 TOTAL SCORE: ${finalScore} pts`;
 
     this.add
-      .text(this.scale.width / 2, this.scale.height / 2 + 35, statsText, {
+      .text(this.scale.width / 2, this.scale.height / 2 + 25, statsText, {
         fontSize: "17px", color: "#ffffff",
-        backgroundColor: "#1c0d0588",
-        padding: { x: 18, y: 12 }, align: "center", lineSpacing: 7,
+        backgroundColor: "#160b05aa",
+        padding: { x: 22, y: 14 }, align: "center", lineSpacing: 8,
       })
       .setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // Play Again Button
-    const playAgainBtn = this.add
-      .text(this.scale.width / 2 - 110, this.scale.height / 2 + 175,
-        "🔄  Play Again", {
-        fontSize: "19px", fontStyle: "bold",
-        color: "#ffffff", backgroundColor: "#d84315",
-        padding: { x: 18, y: 10 },
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700)
-      .setInteractive({ useHandCursor: true });
+    // 4. Action Buttons: Play Again, Home, Leaderboard
+    const btnY = this.scale.height / 2 + 185;
 
-    playAgainBtn.on("pointerdown", () => {
+    const createBtn = (label, xOffset, bgHex, onClick) => {
+      const btn = this.add
+        .text(this.scale.width / 2 + xOffset, btnY, label, {
+          fontSize: "16px", fontStyle: "bold",
+          color: "#ffffff", backgroundColor: bgHex,
+          padding: { x: 14, y: 10 },
+        })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(700)
+        .setInteractive({ useHandCursor: true });
+
+      btn.on("pointerover", () => {
+        btn.setScale(1.08);
+        btn.setStyle({ color: "#ffd700" });
+      });
+      btn.on("pointerout", () => {
+        btn.setScale(1.0);
+        btn.setStyle({ color: "#ffffff" });
+      });
+      btn.on("pointerdown", onClick);
+
+      return btn;
+    };
+
+    // 🔄 Play Again
+    createBtn("🔄 Play Again", -150, "#d84315", () => {
       this.soundFX.stopBGM();
       this.scene.restart();
     });
-    playAgainBtn.on("pointerover",  () => playAgainBtn.setStyle({ color: "#ffd700" }));
-    playAgainBtn.on("pointerout",   () => playAgainBtn.setStyle({ color: "#ffffff" }));
 
-    // Main Menu Button
-    const menuBtn = this.add
-      .text(this.scale.width / 2 + 110, this.scale.height / 2 + 175,
-        "🏠  Main Menu", {
-        fontSize: "19px", fontStyle: "bold",
-        color: "#ffffff", backgroundColor: "#4e342e",
-        padding: { x: 18, y: 10 },
-      })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(700)
-      .setInteractive({ useHandCursor: true });
-
-    menuBtn.on("pointerdown", () => {
+    // 🏠 Home
+    createBtn("🏠 Home", 0, "#4e342e", () => {
       this.soundFX.stopBGM();
       window.dispatchEvent(new CustomEvent("nav-home"));
     });
-    menuBtn.on("pointerover",  () => menuBtn.setStyle({ color: "#ffd700" }));
-    menuBtn.on("pointerout",   () => menuBtn.setStyle({ color: "#ffffff" }));
+
+    // 🏆 Leaderboard
+    createBtn("🏆 Leaderboard", 150, "#1565c0", () => {
+      this.soundFX.stopBGM();
+      sessionStorage.setItem("open_modal", "leaderboard");
+      window.dispatchEvent(new CustomEvent("nav-home"));
+    });
   }
 
   // ═══════════════════════════════════════════
@@ -1349,7 +1779,7 @@ export default class Level1Scene extends Phaser.Scene {
     // ── Horizontal movement ──────────────────────────
     if (this.cursors.left.isDown || this.keys.A.isDown) {
       this.player.body.setVelocityX(-speed);
-      this.player.setFlipX(true);
+      this.player.setFlipX(false);
       dir = "left";
       moving = true;
     } else if (this.cursors.right.isDown || this.keys.D.isDown) {
@@ -1379,37 +1809,42 @@ export default class Level1Scene extends Phaser.Scene {
       this.soundFX.startBGM();
     }
 
-    // ── Walking animation: bob + tilt ────────────────
-    if (moving && !this._isMoving) {
-      // Transition to walking state
-      this._isMoving = true;
-      if (this._walkBobTween) this._walkBobTween.resume();
-    } else if (!moving && this._isMoving) {
-      // Transition to idle state
-      this._isMoving = false;
-      if (this._walkBobTween) this._walkBobTween.pause();
-      // Snap back to neutral scale
-      this.tweens.add({
-        targets: this.player,
-        scaleX: 0.4, scaleY: 0.4,
-        duration: 80, ease: "Sine.easeOut",
-      });
-      this.player.setAngle(0);
-    }
-
-    // ── Tilt left/right while walking ───────────────
+    // ── Directional & Idle Animations ────────────────
     if (moving) {
-      const tiltAngle = Math.sin(this.time.now / 90) * 8;
-      if (dir === "left" || dir === "right") {
-        // Sideways: slight lean in movement direction
-        this.player.setAngle(dir === "left" ? -tiltAngle * 0.5 : tiltAngle * 0.5);
-      } else {
-        // Up/down: gentle sway
-        this.player.setAngle(tiltAngle);
-      }
+      this.player.setAngle(0);
+      this.player.anims.play(`walk-${dir}`, true);
+    } else {
+      this.player.setAngle(0);
+      this.player.anims.play("idle", true);
     }
 
-    // ── Idle breathe tween (when still, slow scale pulse) ──
-    // Only trigger once when idle to avoid stacking tweens
+    // ── Collectibles Proximity Glow (Item 2) ─────────
+    if (this.collectiblesGroup) {
+      const px = this.player.x;
+      const py = this.player.y;
+      this.collectiblesGroup.getChildren().forEach((item) => {
+        if (!item || !item.active || !item.glowRef) return;
+        const dist = Phaser.Math.Distance.Between(px, py, item.x, item.y);
+        if (dist < 140) {
+          // Glow gets brighter and expands as player approaches
+          const factor = 1 - dist / 140;
+          item.glowRef.setAlpha(0.35 + factor * 0.45);
+          item.glowRef.setScale(1.2 + factor * 0.6);
+        } else {
+          item.glowRef.setAlpha(0.25);
+          item.glowRef.setScale(1.0);
+        }
+      });
+    }
+
+    // ── Update temple guide arrow ────────────────────
+    if (this._templeArrow && this.allCollected && !this.levelComplete) {
+      const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, TEMPLE_X, TEMPLE_Y);
+      this._templeArrow.setPosition(
+        this.player.x + Math.cos(angle) * 55,
+        this.player.y + Math.sin(angle) * 55
+      );
+      this._templeArrow.setRotation(angle);
+    }
   }
 }

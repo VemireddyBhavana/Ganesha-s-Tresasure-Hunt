@@ -5,7 +5,14 @@ import "./Home.css";
 
 function Home() {
   const navigate = useNavigate();
-  const [activeModal, setActiveModal] = useState(null);
+  const [activeModal, setActiveModal] = useState(() => {
+    const modal = sessionStorage.getItem("open_modal");
+    if (modal) {
+      sessionStorage.removeItem("open_modal");
+      return modal;
+    }
+    return null;
+  });
   const [leaderboardScores, setLeaderboardScores] = useState([]);
   const [loadingScores, setLoadingScores] = useState(false);
 
