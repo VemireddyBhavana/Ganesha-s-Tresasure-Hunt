@@ -401,11 +401,29 @@ export default class Level1Scene extends Phaser.Scene {
     super("Level1Scene");
   }
 
+  getDeviceScale() {
+    try {
+      const vw = window.innerWidth || 1280;
+      const vh = window.innerHeight || 720;
+      if (vw <= 420) return { card: 0.56, dock: 0.52, text: 0.7, pad: 0.72, modal: 0.7, isMobile: true };
+      if (vw <= 560) return { card: 0.68, dock: 0.64, text: 0.8, pad: 0.82, modal: 0.8, isMobile: true };
+      if (vw <= 768) return { card: 0.82, dock: 0.78, text: 0.9, pad: 0.92, modal: 0.9, isMobile: true };
+      return { card: 1, dock: 1, text: 1, pad: 1, modal: 1, isMobile: false };
+    } catch (e) {
+      return { card: 1, dock: 1, text: 1, pad: 1, modal: 1, isMobile: false };
+    }
+  }
+
   // ═══════════════════════════════════════════
   //  CREATE
   // ═══════════════════════════════════════════
   create() {
     this.soundFX = new SoundFX();
+
+    this.ds = this.getDeviceScale();
+
+    const W = this.scale.width;
+    const H = this.scale.height;
 
     // Game state
     this.score          = 0;
@@ -683,10 +701,16 @@ export default class Level1Scene extends Phaser.Scene {
     });
 
     // Tap/drag on screen to steer player (mobile / mouse friendly)
+    // Responsive HUD threshold: higher on mobile since stacked HUD takes more top space
+    const steerTopThreshold = this.ds.isMobile ? 150 : 100;
+    // D-Pad area at bottom-left: skip drag-steer there so D-Pad works cleanly
+    const steerPadSafeX = this.ds.isMobile ? 220 : 240;
+    const steerPadSafeY = this.ds.isMobile ? 540 : 560;
+
     this.input.on("pointermove", (pointer) => {
       if (pointer.isDown && !this.isGamePaused && !this.gameOver && !this.levelComplete) {
-        // Only steer if pointer is in world canvas, not clicking HUD buttons
-        if (pointer.y > 100) {
+        const inDpadZone = pointer.x < steerPadSafeX && pointer.y > steerPadSafeY;
+        if (pointer.y > steerTopThreshold && !inDpadZone) {
           const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
           const dx = worldPoint.x - this.player.x;
           const dy = worldPoint.y - this.player.y;
@@ -716,58 +740,66 @@ export default class Level1Scene extends Phaser.Scene {
     });
 
     // ─────────────────────────────────────
-    //  HUD: TOP BAR GLASSMORPHISM
+    //  HUD: TOP BAR GLASSMORPHISM (Responsive)
     // ─────────────────────────────────────
-    // 1. Top-Right Prasad Card (Score) — Reference Game Style
-    const prasadCardW = 230;
-    const prasadCardX = this.scale.width - prasadCardW / 2 - 20;
-    const prasadCardY = 38;
-    const prasadCard = this.add.rectangle(prasadCardX, prasadCardY, prasadCardW, 54, 0x1d1007, 0.95)
-      .setStrokeStyle(2, 0xffd700, 0.9)
-      .setScrollFactor(0).setDepth(200);
+    const cs = this.ds.card;
+    const ts = this.ds.text;
+    const dsDock = this.ds.dock;
+
+    const cardPad = this.ds.isMobile ? 10 : 20;
+    const prasadCardW = Math.round(230 * cs);
+    const prasadCardH = Math.round(54 * cs);
+    const prasadCardX = W - prasadCardW / 2 - cardPad;
+    const prasadCardY = this.ds.isMobile ? 28 : 38;
+
     const drawCardCorners = (cx, cy, w, h) => {
-      const cornerLen = 10;
+      const cornerLen = Math.round(10 * cs);
       const col = 0xffd700;
-      const t = 2;
-      // top-left
+      const t = Math.max(1, Math.round(2 * cs));
       this.add.line(0, 0, cx - w/2 + cornerLen, cy - h/2, cx - w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
       this.add.line(0, 0, cx - w/2, cy - h/2 + cornerLen, cx - w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
-      // top-right
       this.add.line(0, 0, cx + w/2 - cornerLen, cy - h/2, cx + w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
       this.add.line(0, 0, cx + w/2, cy - h/2 + cornerLen, cx + w/2, cy - h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
-      // bottom-left
       this.add.line(0, 0, cx - w/2 + cornerLen, cy + h/2, cx - w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
       this.add.line(0, 0, cx - w/2, cy + h/2 - cornerLen, cx - w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
-      // bottom-right
       this.add.line(0, 0, cx + w/2 - cornerLen, cy + h/2, cx + w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
       this.add.line(0, 0, cx + w/2, cy + h/2 - cornerLen, cx + w/2, cy + h/2, col, 1).setLineWidth(t).setScrollFactor(0).setDepth(201);
     };
-    drawCardCorners(prasadCardX, prasadCardY, prasadCardW, 54);
 
-    this.add.text(prasadCardX - prasadCardW / 2 + 28, prasadCardY - 8, "🍬", {
-      fontSize: "26px",
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-
-    this.scoreText = this.add.text(prasadCardX + 12, prasadCardY - 10, "0", {
-      fontSize: "26px", fontStyle: "bold", color: "#ffffff",
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-
-    this.add.text(prasadCardX + 12, prasadCardY + 14, "PRASAD", {
-      fontSize: "11px", fontStyle: "bold", color: "#ffb74d",
-      letterSpacing: "2px",
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-
-    // 2. Top-Left Best Score Card (Reference Game Style)
-    const bestCardW = 230;
-    const bestCardX = bestCardW / 2 + 20;
-    const bestCardY = 38;
-    const bestCard = this.add.rectangle(bestCardX, bestCardY, bestCardW, 54, 0x1d1007, 0.95)
-      .setStrokeStyle(2, 0xffd700, 0.9)
+    this.add.rectangle(prasadCardX, prasadCardY, prasadCardW, prasadCardH, 0x1d1007, 0.95)
+      .setStrokeStyle(Math.max(1, Math.round(2 * cs)), 0xffd700, 0.9)
       .setScrollFactor(0).setDepth(200);
-    drawCardCorners(bestCardX, bestCardY, bestCardW, 54);
+    drawCardCorners(prasadCardX, prasadCardY, prasadCardW, prasadCardH);
 
-    this.add.text(bestCardX - bestCardW / 2 + 28, bestCardY - 8, "🏆", {
-      fontSize: "26px",
+    const prasadIconX = prasadCardX - prasadCardW / 2 + Math.round(28 * cs);
+    this.add.text(prasadIconX, prasadCardY - Math.round(8 * cs), "🍬", {
+      fontSize: `${Math.round(26 * cs)}px`,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+    const prasadValX = prasadCardX + Math.round(12 * cs);
+    this.scoreText = this.add.text(prasadValX, prasadCardY - Math.round(10 * cs), "0", {
+      fontSize: `${Math.round(26 * cs)}px`, fontStyle: "bold", color: "#ffffff",
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+    this.add.text(prasadValX, prasadCardY + Math.round(14 * cs), "PRASAD", {
+      fontSize: `${Math.max(8, Math.round(11 * ts))}px`, fontStyle: "bold", color: "#ffb74d",
+      letterSpacing: "1.5px",
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+    // 2. Top-Left Best Score Card
+    const bestCardW = Math.round(230 * cs);
+    const bestCardH = Math.round(54 * cs);
+    const bestCardX = bestCardW / 2 + cardPad;
+    const bestCardY = prasadCardY;
+
+    this.add.rectangle(bestCardX, bestCardY, bestCardW, bestCardH, 0x1d1007, 0.95)
+      .setStrokeStyle(Math.max(1, Math.round(2 * cs)), 0xffd700, 0.9)
+      .setScrollFactor(0).setDepth(200);
+    drawCardCorners(bestCardX, bestCardY, bestCardW, bestCardH);
+
+    const bestIconX = bestCardX - bestCardW / 2 + Math.round(28 * cs);
+    this.add.text(bestIconX, bestCardY - Math.round(8 * cs), "🏆", {
+      fontSize: `${Math.round(26 * cs)}px`,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
     let storedBest = 0;
@@ -775,73 +807,85 @@ export default class Level1Scene extends Phaser.Scene {
       storedBest = parseInt(localStorage.getItem("ganesha_high_score") || "0", 10);
     } catch (e) {}
     this.storedBest = storedBest;
-    this.bestScoreText = this.add.text(bestCardX + 12, bestCardY - 10, storedBest.toString(), {
-      fontSize: "26px", fontStyle: "bold", color: "#ffffff",
+
+    const bestValX = bestCardX + Math.round(12 * cs);
+    this.bestScoreText = this.add.text(bestValX, bestCardY - Math.round(10 * cs), storedBest.toString(), {
+      fontSize: `${Math.round(26 * cs)}px`, fontStyle: "bold", color: "#ffffff",
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
-    this.add.text(bestCardX + 12, bestCardY + 14, "BEST SCORE", {
-      fontSize: "11px", fontStyle: "bold", color: "#ffb74d",
-      letterSpacing: "2px",
+    this.add.text(bestValX, bestCardY + Math.round(14 * cs), "BEST SCORE", {
+      fontSize: `${Math.max(8, Math.round(11 * ts))}px`, fontStyle: "bold", color: "#ffb74d",
+      letterSpacing: "1.5px",
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
-    // 3. Top-Center Offerings Quest Dock
-    const dockW = 540;
-    const dockH = 70;
-    const dockX = this.scale.width / 2;
-    const dockY = 110;
+    // 3. Top-Center Offerings Quest Dock (Responsive)
+    const dockW = Math.round(540 * dsDock);
+    const dockH = Math.round(70 * dsDock);
+    const dockX = W / 2;
+    const dockY = this.ds.isMobile ? prasadCardY + prasadCardH / 2 + dockH / 2 + Math.round(12 * dsDock) : 110;
 
     this.add.rectangle(dockX, dockY, dockW, dockH, 0x1d1007, 0.92)
-      .setStrokeStyle(2, 0xffd700, 0.9)
+      .setStrokeStyle(Math.max(1, Math.round(2 * dsDock)), 0xffd700, 0.9)
       .setScrollFactor(0).setDepth(200);
 
-    this.add.text(dockX, dockY - 22, "🛕 SACRED OFFERINGS FOR GANESHA", {
-      fontSize: "11px", fontStyle: "bold", color: "#ffecb3",
-      stroke: "#2a1500", strokeThickness: 2,
+    this.add.text(dockX, dockY - Math.round(22 * dsDock), "🛕 SACRED OFFERINGS FOR GANESHA", {
+      fontSize: `${Math.max(8, Math.round(11 * ts * dsDock))}px`, fontStyle: "bold", color: "#ffecb3",
+      stroke: "#2a1500", strokeThickness: Math.max(1, Math.round(2 * dsDock)),
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
     const TRACKER_ORDER = ["🌸", "🌿", "🍬", "🥥", "🪔"];
-    const badgeSpacing = 100;
-    const startX = dockX - 200;
+    const badgeSpacing = Math.round(100 * dsDock);
+    const startX = dockX - Math.round(200 * dsDock);
+    const _progressBarWidth = Math.round(480 * dsDock);
+    const badgePad = this.ds.isMobile ? { x: Math.round(5 * dsDock), y: Math.round(2 * dsDock) } : { x: 7, y: 3 };
 
     TRACKER_ORDER.forEach((emoji, idx) => {
       const t = this.tracker[emoji];
       const bx = startX + idx * badgeSpacing;
-      t.badgeObj = this.add.text(bx, dockY + 6, `${emoji} 0/${t.total}`, {
-        fontSize: "13px", fontStyle: "bold", color: "#ffffff",
-        backgroundColor: "#3e2723", padding: { x: 7, y: 3 },
+      t.badgeObj = this.add.text(bx, dockY + Math.round(6 * dsDock), `${emoji} 0/${t.total}`, {
+        fontSize: `${Math.max(10, Math.round(13 * ts * dsDock))}px`, fontStyle: "bold", color: "#ffffff",
+        backgroundColor: "#3e2723", padding: badgePad,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
     });
 
-    this.progressBarBg = this.add.rectangle(dockX, dockY + 30, 480, 6, 0x3e2723)
+    this.progressBarBg = this.add.rectangle(dockX, dockY + Math.round(30 * dsDock), _progressBarWidth, Math.max(4, Math.round(6 * dsDock)), 0x3e2723)
       .setScrollFactor(0).setDepth(201);
-    this.progressBarFill = this.add.rectangle(dockX - 240, dockY + 30, 0, 6, 0xffd700)
+    this.progressBarFill = this.add.rectangle(dockX - _progressBarWidth / 2, dockY + Math.round(30 * dsDock), 0, Math.max(4, Math.round(6 * dsDock)), 0xffd700)
       .setOrigin(0, 0.5).setScrollFactor(0).setDepth(202);
+    this._progressBarMaxW = _progressBarWidth;
 
-    // 4. Vitals Row (Lives + Timer) below Best Score card
-    this.livesText = this.add.text(28, 92, "❤️ ❤️ ❤️", {
-      fontSize: "18px", color: "#ff4d4d",
+    // 4. Vitals Row (Lives + Timer)
+    const vitalsX = this.ds.isMobile ? 14 : 28;
+    const livesY = this.ds.isMobile ? bestCardY + bestCardH / 2 + 18 : 92;
+    this.livesText = this.add.text(vitalsX, livesY, "❤️ ❤️ ❤️", {
+      fontSize: `${Math.max(12, Math.round(18 * ts))}px`, color: "#ff4d4d",
     }).setScrollFactor(0).setDepth(201);
 
-    this.timerText = this.add.text(28, 118, `⏱️ TIME: ${TIME_LIMIT}s`, {
-      fontSize: "15px", fontStyle: "bold", color: "#64b5f6",
-      stroke: "#001a33", strokeThickness: 2,
+    this.timerText = this.add.text(vitalsX, livesY + Math.round(this.ds.isMobile ? 22 : 26), `⏱️ TIME: ${TIME_LIMIT}s`, {
+      fontSize: `${Math.max(11, Math.round(15 * ts))}px`, fontStyle: "bold", color: "#64b5f6",
+      stroke: "#001a33", strokeThickness: Math.max(1, Math.round(2 * ts)),
     }).setScrollFactor(0).setDepth(201);
 
-    // 5. Menu Button + Sound Toggle at Top-Right Corner
-    this.hudMenuBtn = this.add.text(this.scale.width - 20, 100, "☰", {
-      fontSize: "26px", fontStyle: "bold", color: "#ffd700",
-      backgroundColor: "#1d1007", padding: { x: 8, y: 1 },
-      stroke: "#ffd700", strokeThickness: 1,
+    // 5. Menu Button + Sound Toggle at Top-Right Corner (Responsive)
+    const hudBtnMenuPadX = this.ds.isMobile ? Math.round(8 * cs) : 20;
+    const hudBtnMenuY = this.ds.isMobile ? dockY + dockH / 2 + 22 : 100;
+    const menuPad = this.ds.isMobile ? { x: Math.round(6 * cs), y: 1 } : { x: 8, y: 1 };
+    this.hudMenuBtn = this.add.text(W - hudBtnMenuPadX, hudBtnMenuY, "☰", {
+      fontSize: `${Math.max(16, Math.round(26 * cs))}px`, fontStyle: "bold", color: "#ffd700",
+      backgroundColor: "#1d1007", padding: menuPad,
+      stroke: "#ffd700", strokeThickness: Math.max(1, Math.round(1 * cs)),
     }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
     this.hudMenuBtn.on("pointerdown", () => this.togglePause());
     this.hudMenuBtn.on("pointerover", () => this.hudMenuBtn.setStyle({ color: "#ffffff" }));
     this.hudMenuBtn.on("pointerout", () => this.hudMenuBtn.setStyle({ color: "#ffd700" }));
 
-    // 5b. HUD Quick Sound Toggle Button (🔊/🔇) — placed left of menu btn
+    // 5b. HUD Quick Sound Toggle Button (🔊/🔇)
     const _muteIcon = () => this.soundFX.isMuted ? "🔇" : "🔊";
-    this.hudSoundBtn = this.add.text(this.scale.width - 76, 100, _muteIcon(), {
-      fontSize: "22px", color: "#ffd700",
-      backgroundColor: "#1d1007", padding: { x: 7, y: 2 },
+    const soundBtnPadX = this.ds.isMobile ? Math.round(hudBtnMenuPadX + 52 * cs) : 76;
+    const soundPad = this.ds.isMobile ? { x: Math.round(5 * cs), y: Math.round(2 * cs) } : { x: 7, y: 2 };
+    this.hudSoundBtn = this.add.text(W - soundBtnPadX, hudBtnMenuY, _muteIcon(), {
+      fontSize: `${Math.max(14, Math.round(22 * cs))}px`, color: "#ffd700",
+      backgroundColor: "#1d1007", padding: soundPad,
     }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(300).setInteractive({ useHandCursor: true });
     this.hudSoundBtn.on("pointerdown", () => {
       const muted = this.soundFX.toggleMute();
@@ -876,107 +920,151 @@ export default class Level1Scene extends Phaser.Scene {
   }
 
   // ═══════════════════════════════════════════
-  //  TOUCH D-PAD CONTROLS
+  //  TOUCH D-PAD CONTROLS (Responsive)
   // ═══════════════════════════════════════════
   createTouchControls() {
-    const padX = 90;
-    const padY = this.scale.height - 90;
-    const btnSize = 44;
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const ps = this.ds.pad;
+    const ts = this.ds.text;
+
+    const btnSize = Math.round(56 * ps);
+    const btnGap = Math.round(56 * ps);
+    const padPadX = this.ds.isMobile ? Math.round(60 * ps) : 80;
+    const padPadY = this.ds.isMobile ? Math.round(80 * ps) : 100;
+    const padX = padPadX;
+    const padY = H - padPadY;
 
     const padContainer = this.add.container(padX, padY).setScrollFactor(0).setDepth(300);
 
-    const makeBtn = (bx, by, label, vx, vy) => {
-      const bg = this.add.circle(bx, by, btnSize / 2, 0x221105, 0.7)
-        .setStrokeStyle(2, 0xffd700, 0.8)
+    const held = { up: false, down: false, left: false, right: false };
+    const updateVector = () => {
+      let vx = 0, vy = 0;
+      if (held.up)    vy -= 1;
+      if (held.down)  vy += 1;
+      if (held.left)  vx -= 1;
+      if (held.right) vx += 1;
+      if (vx !== 0 || vy !== 0) {
+        const len = Math.hypot(vx, vy);
+        this.touchVector = { x: vx / len, y: vy / len };
+        this.isTouchActive = true;
+      } else {
+        this.touchVector = { x: 0, y: 0 };
+        this.isTouchActive = false;
+      }
+    };
+
+    const makeBtn = (bx, by, label, dir) => {
+      const bg = this.add.circle(bx, by, btnSize / 2, 0x221105, 0.75)
+        .setStrokeStyle(Math.max(1.5, Math.round(2.5 * ps)), 0xffd700, 0.9)
         .setInteractive({ useHandCursor: true });
 
       const text = this.add.text(bx, by, label, {
-        fontSize: "18px", fontStyle: "bold", color: "#ffd700",
+        fontSize: `${Math.max(14, Math.round(22 * ts * ps))}px`, fontStyle: "bold", color: "#ffd700",
       }).setOrigin(0.5);
 
-      bg.on("pointerdown", () => {
-        this.touchVector = { x: vx, y: vy };
-        this.isTouchActive = true;
+      const press = () => {
+        held[dir] = true;
+        updateVector();
         bg.setFillStyle(0xd84315, 0.9);
-      });
-      bg.on("pointerup", () => {
-        this.touchVector = { x: 0, y: 0 };
-        this.isTouchActive = false;
-        bg.setFillStyle(0x221105, 0.7);
-      });
-      bg.on("pointerout", () => {
-        this.touchVector = { x: 0, y: 0 };
-        this.isTouchActive = false;
-        bg.setFillStyle(0x221105, 0.7);
-      });
+      };
+      const release = () => {
+        held[dir] = false;
+        updateVector();
+        bg.setFillStyle(0x221105, 0.75);
+      };
+
+      bg.on("pointerdown", press);
+      bg.on("pointerup", release);
+      bg.on("pointerout", release);
+      bg.on("pointerleave", release);
+      bg.on("pointercancel", release);
 
       return [bg, text];
     };
 
-    const upBtn    = makeBtn(0, -42, "▲", 0, -1);
-    const downBtn  = makeBtn(0, 42, "▼", 0, 1);
-    const leftBtn  = makeBtn(-42, 0, "◀", -1, 0);
-    const rightBtn = makeBtn(42, 0, "▶", 1, 0);
+    const upBtn    = makeBtn(0,  -btnGap, "▲", "up");
+    const downBtn  = makeBtn(0,   btnGap, "▼", "down");
+    const leftBtn  = makeBtn(-btnGap,  0, "◀", "left");
+    const rightBtn = makeBtn(btnGap,   0, "▶", "right");
 
     padContainer.add([...upBtn, ...downBtn, ...leftBtn, ...rightBtn]);
+
+    // Mobile-only: Sprint hint label near D-Pad
+    if (this.ds.isMobile) {
+      const hint = this.add.text(0, btnGap + btnSize / 2 + 18, "Hold ▲▼◀▶ to walk", {
+        fontSize: `${Math.max(9, Math.round(12 * ts))}px`,
+        color: "#ffecb3",
+        backgroundColor: "#1a0b04cc",
+        padding: { x: 6, y: 3 },
+      }).setOrigin(0.5);
+      padContainer.add(hint);
+    }
   }
 
   // ═══════════════════════════════════════════
-  //  PAUSE MENU
+  //  PAUSE MENU (Responsive)
   // ═══════════════════════════════════════════
   createPauseMenu() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const ms = this.ds.modal;
+    const ts = this.ds.text;
+
     this.pauseContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(800).setVisible(false);
 
-    const overlay = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height, 0x000000, 0.75
-    ).setInteractive();
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75).setInteractive();
 
-    const cardW = 460;
-    const cardH = 520;
-    const card = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2, cardW, cardH, 0x241208, 0.96
-    );
-    card.setStrokeStyle(3, 0xffd700);
+    const cardW = Math.round(460 * ms);
+    const cardH = Math.round(520 * ms);
+    const card = this.add.rectangle(W / 2, H / 2, cardW, cardH, 0x241208, 0.96);
+    card.setStrokeStyle(Math.max(2, Math.round(3 * ms)), 0xffd700);
 
-    const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, "⏸️  PAUSED", {
-      fontSize: "30px", fontStyle: "bold", color: "#ffd700",
-      stroke: "#3d1f00", strokeThickness: 4,
+    const titlePad = Math.round(200 * ms);
+    const title = this.add.text(W / 2, H / 2 - titlePad, "⏸️  PAUSED", {
+      fontSize: `${Math.max(18, Math.round(30 * ms * ts))}px`, fontStyle: "bold", color: "#ffd700",
+      stroke: "#3d1f00", strokeThickness: Math.max(2, Math.round(4 * ms)),
     }).setOrigin(0.5);
 
-    this.pauseStatsText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 120, "", {
-      fontSize: "15px", color: "#ffffff",
+    const statsPad = Math.round(120 * ms);
+    const statsPadX = this.ds.isMobile ? { x: Math.round(14 * ms), y: Math.round(8 * ms) } : { x: 20, y: 10 };
+    this.pauseStatsText = this.add.text(W / 2, H / 2 - statsPad, "", {
+      fontSize: `${Math.max(10, Math.round(15 * ts * ms))}px`, color: "#ffffff",
       backgroundColor: "#1c0d05aa",
-      padding: { x: 20, y: 10 }, align: "center", lineSpacing: 6,
+      padding: statsPadX, align: "center", lineSpacing: Math.max(3, Math.round(6 * ms)),
     }).setOrigin(0.5);
 
-    const resumeBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 - 30, "▶️  Resume Game", {
-      fontSize: "18px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#d84315", padding: { x: 28, y: 9 },
+    const btnSpacing = this.ds.isMobile ? 44 : 55;
+    const btnPad = this.ds.isMobile ? { x: Math.round(18 * ms), y: Math.round(8 * ms) } : { x: 28, y: 9 };
+
+    const resumeBtn = this.add.text(W / 2, H / 2 - Math.round(30 * ms), "▶️  Resume Game", {
+      fontSize: `${Math.max(12, Math.round(18 * ts * ms))}px`, fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#d84315", padding: btnPad,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     resumeBtn.on("pointerdown", () => this.togglePause());
 
-    const restartBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 25, "🔄  Restart Level", {
-      fontSize: "18px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#4e342e", padding: { x: 28, y: 9 },
+    const restartBtn = this.add.text(W / 2, H / 2 - Math.round(30 * ms) + btnSpacing, "🔄  Restart Level", {
+      fontSize: `${Math.max(12, Math.round(18 * ts * ms))}px`, fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#4e342e", padding: btnPad,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     restartBtn.on("pointerdown", () => {
       this.soundFX.stopBGM();
       this.scene.restart();
     });
 
-    this.pauseAudioBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 80, "🔊  Audio: ON", {
-      fontSize: "16px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#37474f", padding: { x: 22, y: 8 },
+    const audioBtnPad = this.ds.isMobile ? { x: Math.round(16 * ms), y: Math.round(7 * ms) } : { x: 22, y: 8 };
+    this.pauseAudioBtn = this.add.text(W / 2, H / 2 - Math.round(30 * ms) + btnSpacing * 2, "🔊  Audio: ON", {
+      fontSize: `${Math.max(11, Math.round(16 * ts * ms))}px`, fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#37474f", padding: audioBtnPad,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     this.pauseAudioBtn.on("pointerdown", () => {
       const isMuted = this.soundFX.toggleMute();
       this.pauseAudioBtn.setText(isMuted ? "🔇  Audio: OFF" : "🔊  Audio: ON");
     });
 
-    this.pauseFSBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 130, "⛶  Fullscreen", {
-      fontSize: "16px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#1565c0", padding: { x: 22, y: 8 },
+    this.pauseFSBtn = this.add.text(W / 2, H / 2 - Math.round(30 * ms) + btnSpacing * 3, "⛶  Fullscreen", {
+      fontSize: `${Math.max(11, Math.round(16 * ts * ms))}px`, fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#1565c0", padding: audioBtnPad,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     this.pauseFSBtn.on("pointerdown", () => {
       if (!document.fullscreenElement) {
@@ -994,9 +1082,10 @@ export default class Level1Scene extends Phaser.Scene {
       }
     });
 
-    const menuBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 185, "🏠  Main Menu", {
-      fontSize: "16px", fontStyle: "bold", color: "#b0bec5",
-      backgroundColor: "#212121", padding: { x: 22, y: 7 },
+    const menuBtnPad = this.ds.isMobile ? { x: Math.round(16 * ms), y: Math.round(6 * ms) } : { x: 22, y: 7 };
+    const menuBtn = this.add.text(W / 2, H / 2 - Math.round(30 * ms) + btnSpacing * 4, "🏠  Main Menu", {
+      fontSize: `${Math.max(11, Math.round(16 * ts * ms))}px`, fontStyle: "bold", color: "#b0bec5",
+      backgroundColor: "#212121", padding: menuBtnPad,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     menuBtn.on("pointerdown", () => {
       this.soundFX.stopBGM();
@@ -1117,17 +1206,24 @@ export default class Level1Scene extends Phaser.Scene {
       if (this.sprintTimer) this.sprintTimer.remove();
       this.sprintTimer = this.time.delayedCall(2500, () => { this.sprintActive = false; });
 
-      // Sprint banner
+      const _ts = this.ds.text;
+      const _dsDock = this.ds.dock;
+      const sprintFont = `${Math.max(11, Math.round(17 * _ts * _dsDock))}px`;
+      const sprintPad = this.ds.isMobile
+        ? { x: Math.round(10 * _dsDock), y: Math.round(4 * _dsDock) }
+        : { x: 14, y: 5 };
+      const bannerStartY = this.ds.isMobile ? 165 + Math.round(60 * (1 - _dsDock)) : 165;
+      const bannerEndY   = this.ds.isMobile ? 140 + Math.round(60 * (1 - _dsDock)) : 140;
       const sprintBanner = this.add.text(
-        this.scale.width / 2, 165,
+        this.scale.width / 2, bannerStartY,
         `⚡ DIVINE SPEED! x${(1 + Math.floor(this.comboCount / 2) * 0.5).toFixed(1)} Combo Bonus!`,
-        { fontSize: "17px", fontStyle: "bold", color: "#ffd700",
-          stroke: "#3d1f00", strokeThickness: 4,
-          backgroundColor: "#2d1700cc", padding: { x: 14, y: 5 } }
+        { fontSize: sprintFont, fontStyle: "bold", color: "#ffd700",
+          stroke: "#3d1f00", strokeThickness: Math.max(2, Math.round(4 * _dsDock)),
+          backgroundColor: "#2d1700cc", padding: sprintPad }
       ).setOrigin(0.5).setScrollFactor(0).setDepth(505);
 
       this.tweens.add({
-        targets: sprintBanner, alpha: 0, y: 140,
+        targets: sprintBanner, alpha: 0, y: bannerEndY,
         duration: 1800, delay: 700, ease: "Sine.easeIn",
         onComplete: () => sprintBanner.destroy(),
       });
@@ -1159,9 +1255,10 @@ export default class Level1Scene extends Phaser.Scene {
 
     // Update Progress Bar
     const progressFrac = Math.min(1, this.collected / this.totalItems);
+    const barMaxW = this._progressBarMaxW || 480;
     this.tweens.add({
       targets: this.progressBarFill,
-      width: progressFrac * 480,
+      width: progressFrac * barMaxW,
       duration: 200, ease: "Sine.easeOut",
     });
 
@@ -1239,21 +1336,28 @@ export default class Level1Scene extends Phaser.Scene {
     this.player.body.setVelocity(0);
     this.player.anims.play("idle", true);
 
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const ms = this.ds.modal;
+    const ts = this.ds.text;
+
     // STEP 1: All offerings gathered banner
     const dimBg = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height, 0x000000, 0.55
+      W / 2, H / 2, W, H, 0x000000, 0.55
     ).setScrollFactor(0).setDepth(750).setAlpha(0);
 
     this.tweens.add({ targets: dimBg, alpha: 0.55, duration: 400 });
 
+    const bPad = this.ds.isMobile
+      ? { x: Math.round(20 * ms), y: Math.round(12 * ms) }
+      : { x: 28, y: 16 };
     const bannerText = this.add.text(
-      this.scale.width / 2, this.scale.height / 2,
+      W / 2, H / 2,
       "✨ All 18 Sacred Offerings Gathered! ✨\nThe Temple Gate is Opening...",
       {
-        fontSize: "24px", fontStyle: "bold", color: "#ffd700",
-        stroke: "#3e1700", strokeThickness: 5,
-        backgroundColor: "#1f0c03ee", padding: { x: 28, y: 16 },
+        fontSize: `${Math.max(14, Math.round(24 * ms * ts))}px`, fontStyle: "bold", color: "#ffd700",
+        stroke: "#3e1700", strokeThickness: Math.max(2, Math.round(5 * ms)),
+        backgroundColor: "#1f0c03ee", padding: bPad,
         align: "center",
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(760).setScale(0.2);
@@ -1347,12 +1451,17 @@ export default class Level1Scene extends Phaser.Scene {
 
       if (this.timerEvent) this.timerEvent.paused = false;
 
+      const guideFont = `${Math.max(10, Math.round(15 * ts * ms))}px`;
+      const guidePad = this.ds.isMobile
+        ? { x: Math.round(14 * ms), y: Math.round(6 * ms) }
+        : { x: 20, y: 8 };
+      const guideY = this.ds.isMobile ? H - Math.round(60 + 100 * this.ds.pad) : H - 42;
       this._guideBanner = this.add.text(
-        this.scale.width / 2, this.scale.height - 42,
+        W / 2, guideY,
         "🛕 The Temple is open! Enter the inner sanctum for Aarti. 🛕",
         {
-          fontSize: "15px", fontStyle: "bold", color: "#ffffff",
-          backgroundColor: "#d84315ee", padding: { x: 20, y: 8 },
+          fontSize: guideFont, fontStyle: "bold", color: "#ffffff",
+          backgroundColor: "#d84315ee", padding: guidePad,
         }
       ).setOrigin(0.5).setScrollFactor(0).setDepth(500);
 
@@ -1510,6 +1619,11 @@ export default class Level1Scene extends Phaser.Scene {
   _showVictoryScreen() {
     this.launchCelebrationEffects();
 
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const ms = this.ds.modal;
+    const ts = this.ds.text;
+
     const offeringsScore = this.score;
     const timeBonus      = Math.max(0, this.timeLeft * 2);
     const livesBonus     = Math.max(0, this.lives * 50);
@@ -1525,48 +1639,36 @@ export default class Level1Scene extends Phaser.Scene {
       starTitle = "⭐⭐☆ DEVOTED SEVA!";
     }
 
-    // Modal Dim Overlay
-    this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height, 0x000000, 0.82
-    ).setScrollFactor(0).setDepth(600);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.82)
+      .setScrollFactor(0).setDepth(600);
 
-    // Card background
-    const cardW = 580;
-    const cardH = 560;
-    const card = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2, cardW, cardH, 0x23140a, 0.97
-    ).setScrollFactor(0).setDepth(650);
-    card.setStrokeStyle(4, 0xffd700);
+    const cardW = Math.round(580 * ms);
+    const cardH = Math.round(560 * ms);
+    const card = this.add.rectangle(W / 2, H / 2, cardW, cardH, 0x23140a, 0.97)
+      .setScrollFactor(0).setDepth(650);
+    card.setStrokeStyle(Math.max(2, Math.round(4 * ms)), 0xffd700);
 
-    // Title
-    const titleText = this.add.text(
-      this.scale.width / 2, this.scale.height / 2 - 225,
+    const titleText = this.add.text(W / 2, H / 2 - Math.round(225 * ms),
       "🏆 LEVEL COMPLETE! 🏆", {
-        fontSize: "28px", fontStyle: "bold", color: "#ffd700",
-        stroke: "#3d1f00", strokeThickness: 5,
+        fontSize: `${Math.max(16, Math.round(28 * ms * ts))}px`, fontStyle: "bold", color: "#ffd700",
+        stroke: "#3d1f00", strokeThickness: Math.max(2, Math.round(5 * ms)),
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0.2);
 
-    this.tweens.add({
-      targets: titleText, scale: 1, duration: 450, ease: "Back.easeOut",
-    });
+    this.tweens.add({ targets: titleText, scale: 1, duration: 450, ease: "Back.easeOut" });
 
-    // Subtitle (Star Title)
-    this.add.text(
-      this.scale.width / 2, this.scale.height / 2 - 175, starTitle, {
-        fontSize: "18px", fontStyle: "bold", color: "#ffecb3",
-        stroke: "#3d1f00", strokeThickness: 3,
-      }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(700);
+    this.add.text(W / 2, H / 2 - Math.round(175 * ms), starTitle, {
+      fontSize: `${Math.max(11, Math.round(18 * ts * ms))}px`, fontStyle: "bold", color: "#ffecb3",
+      stroke: "#3d1f00", strokeThickness: Math.max(1, Math.round(3 * ms)),
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // Animated Star Badges
-    const starSpacing = 65;
+    const starSpacing = Math.round(65 * ms);
     for (let i = 0; i < 3; i++) {
       const isEarned = i < stars;
       const s = this.add.text(
-        this.scale.width / 2 + (i - 1) * starSpacing, this.scale.height / 2 - 128,
-        isEarned ? "⭐" : "☆", { fontSize: "38px", color: isEarned ? "#ffd700" : "#757575" }
+        W / 2 + (i - 1) * starSpacing, H / 2 - Math.round(128 * ms),
+        isEarned ? "⭐" : "☆",
+        { fontSize: `${Math.max(20, Math.round(38 * ms))}px`, color: isEarned ? "#ffd700" : "#757575" }
       ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0);
 
       this.tweens.add({
@@ -1574,21 +1676,20 @@ export default class Level1Scene extends Phaser.Scene {
       });
     }
 
-    // Sacred Blessing Banner
     const blessingText = stars === 3
       ? "🙏 Ganpati Bappa Morya! 🙏\nMay Lord Ganesha bless you with wisdom, peace & auspicious beginnings."
       : "🙏 Ganpati Bappa Morya! 🙏\nThe sacred offerings have been placed. Lord Ganesha accepts your devotion.";
-    const blessingLabel = this.add.text(
-      this.scale.width / 2, this.scale.height / 2 - 68, blessingText, {
-        fontSize: "12px", fontStyle: "italic", color: "#ffe0b2",
-        stroke: "#2a1000", strokeThickness: 2,
-        backgroundColor: "#3e1a00cc", padding: { x: 16, y: 7 },
-        align: "center", lineSpacing: 4,
-      }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setAlpha(0);
+    const blessPad = this.ds.isMobile
+      ? { x: Math.round(12 * ms), y: Math.round(5 * ms) }
+      : { x: 16, y: 7 };
+    const blessingLabel = this.add.text(W / 2, H / 2 - Math.round(68 * ms), blessingText, {
+      fontSize: `${Math.max(9, Math.round(12 * ts * ms))}px`, fontStyle: "italic", color: "#ffe0b2",
+      stroke: "#2a1000", strokeThickness: Math.max(1, Math.round(2 * ms)),
+      backgroundColor: "#3e1a00cc", padding: blessPad,
+      align: "center", lineSpacing: Math.max(2, Math.round(4 * ms)),
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(700).setAlpha(0);
     this.tweens.add({ targets: blessingLabel, alpha: 1, duration: 800, delay: 400 });
 
-    // Stats Breakdown
     const statsText =
       `🌸 Offerings + Eco-Seva: ${offeringsScore} pts\n` +
       `⏱️ Time Left (${this.timeLeft}s): +${timeBonus} pts\n` +
@@ -1596,21 +1697,23 @@ export default class Level1Scene extends Phaser.Scene {
       `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `🏆 TOTAL SCORE: ${finalScore} pts`;
 
-    this.add.text(
-      this.scale.width / 2, this.scale.height / 2 + 25, statsText, {
-        fontSize: "15px", color: "#ffffff",
-        backgroundColor: "#160b05ee", padding: { x: 22, y: 10 },
-        align: "center", lineSpacing: 5,
-      }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(700);
+    const statsPad = this.ds.isMobile
+      ? { x: Math.round(16 * ms), y: Math.round(8 * ms) }
+      : { x: 22, y: 10 };
+    this.add.text(W / 2, H / 2 + Math.round(25 * ms), statsText, {
+      fontSize: `${Math.max(9, Math.round(15 * ts * ms))}px`, color: "#ffffff",
+      backgroundColor: "#160b05ee", padding: statsPad,
+      align: "center", lineSpacing: Math.max(3, Math.round(5 * ms)),
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    // Player Name Prompt & Save to Leaderboard
     let enteredName = localStorage.getItem("ganesha_last_player_name") || "";
-    const nameLabel = this.add.text(
-      this.scale.width / 2, this.scale.height / 2 + 126,
+    const namePad = this.ds.isMobile
+      ? { x: Math.round(12 * ms), y: Math.round(5 * ms) }
+      : { x: 16, y: 6 };
+    const nameLabel = this.add.text(W / 2, H / 2 + Math.round(126 * ms),
       enteredName ? `👤 Devotee: ${enteredName} (Tap to edit)` : "✏️ Tap here to set your Leaderboard Name", {
-        fontSize: "14px", fontStyle: "bold", color: "#ffd700",
-        backgroundColor: "#3e2723", padding: { x: 16, y: 6 },
+        fontSize: `${Math.max(10, Math.round(14 * ts * ms))}px`, fontStyle: "bold", color: "#ffd700",
+        backgroundColor: "#3e2723", padding: namePad,
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
@@ -1624,7 +1727,6 @@ export default class Level1Scene extends Phaser.Scene {
       }
     });
 
-    // Save default score immediately
     try {
       const best = parseInt(localStorage.getItem("ganesha_high_score") || "0", 10);
       if (finalScore > best) localStorage.setItem("ganesha_high_score", finalScore.toString());
@@ -1633,12 +1735,22 @@ export default class Level1Scene extends Phaser.Scene {
       saveScore(enteredName || "Festival Volunteer", finalScore, stars, this.timeLeft);
     } catch (e) {}
 
-    // Action Buttons
-    const btnY = this.scale.height / 2 + 192;
-    const createBtn = (label, xOffset, bgHex, onClick) => {
-      const btn = this.add.text(this.scale.width / 2 + xOffset, btnY, label, {
-        fontSize: "16px", fontStyle: "bold", color: "#ffffff",
-        backgroundColor: bgHex, padding: { x: 14, y: 10 },
+    const btnY = H / 2 + Math.round(192 * ms);
+    const btnPad = this.ds.isMobile
+      ? { x: Math.round(10 * ms), y: Math.round(8 * ms) }
+      : { x: 14, y: 10 };
+    const xOffset = this.ds.isMobile ? null : 150;
+    const createBtn = (label, xIdx, bgHex, onClick) => {
+      let bx;
+      if (this.ds.isMobile) {
+        const slots = [-1, 0, 1];
+        bx = W / 2 + slots[xIdx] * (cardW / 2 - Math.round(30 * ms));
+      } else {
+        bx = W / 2 + (xIdx === 0 ? -150 : xIdx === 1 ? 0 : 150);
+      }
+      const btn = this.add.text(bx, btnY, label, {
+        fontSize: `${Math.max(10, Math.round(16 * ts * ms))}px`, fontStyle: "bold", color: "#ffffff",
+        backgroundColor: bgHex, padding: btnPad,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
       btn.on("pointerover", () => { btn.setScale(1.06); btn.setStyle({ color: "#ffd700" }); });
@@ -1647,17 +1759,17 @@ export default class Level1Scene extends Phaser.Scene {
       return btn;
     };
 
-    createBtn("🔄 Play Again", -150, "#d84315", () => {
+    createBtn("🔄 Play Again", 0, "#d84315", () => {
       this.soundFX.stopBGM();
       this.scene.restart();
     });
 
-    createBtn("🏠 Home", 0, "#4e342e", () => {
+    createBtn("🏠 Home", 1, "#4e342e", () => {
       this.soundFX.stopBGM();
       window.dispatchEvent(new CustomEvent("nav-home"));
     });
 
-    createBtn("🏆 Leaderboard", 150, "#1565c0", () => {
+    createBtn("🏆 Leaderboard", 2, "#1565c0", () => {
       this.soundFX.stopBGM();
       sessionStorage.setItem("open_modal", "leaderboard");
       window.dispatchEvent(new CustomEvent("nav-home"));
@@ -1673,33 +1785,57 @@ export default class Level1Scene extends Phaser.Scene {
     this.timerEvent.remove();
     this.soundFX.stopBGM();
 
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const ms = this.ds.modal;
+    const ts = this.ds.text;
+
     this.player.body.setVelocity(0);
     this.cameras.main.stopFollow();
     this.cameras.main.shake(400, 0.015);
 
-    this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2,
-      this.scale.width, this.scale.height, 0x000000, 0.75
-    ).setScrollFactor(0).setDepth(600);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75)
+      .setScrollFactor(0).setDepth(600);
 
-    const card = this.add.rectangle(
-      this.scale.width / 2, this.scale.height / 2, 500, 360, 0x2a0d0d, 0.95
-    ).setScrollFactor(0).setDepth(650);
-    card.setStrokeStyle(3, 0xff4444);
+    const cardW = Math.round(500 * ms);
+    const cardH = Math.round(360 * ms);
+    const card = this.add.rectangle(W / 2, H / 2, cardW, cardH, 0x2a0d0d, 0.95)
+      .setScrollFactor(0).setDepth(650);
+    card.setStrokeStyle(Math.max(2, Math.round(3 * ms)), 0xff4444);
 
-    this.add.text(this.scale.width / 2, this.scale.height / 2 - 120, "💔 Game Over", {
-      fontSize: "36px", fontStyle: "bold", color: "#ff5252",
-      stroke: "#220000", strokeThickness: 5,
+    this.add.text(W / 2, H / 2 - Math.round(120 * ms), "💔 Game Over", {
+      fontSize: `${Math.max(18, Math.round(36 * ms * ts))}px`, fontStyle: "bold", color: "#ff5252",
+      stroke: "#220000", strokeThickness: Math.max(2, Math.round(5 * ms)),
     }).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    this.add.text(this.scale.width / 2, this.scale.height / 2 - 20, `${reason}\n\n⭐ Score Achieved: ${this.score} pts`, {
-      fontSize: "18px", color: "#ffffff", backgroundColor: "#18050588",
-      padding: { x: 18, y: 14 }, align: "center", lineSpacing: 8,
+    const msgPad = this.ds.isMobile
+      ? { x: Math.round(14 * ms), y: Math.round(10 * ms) }
+      : { x: 18, y: 14 };
+    this.add.text(W / 2, H / 2 - Math.round(20 * ms), `${reason}\n\n⭐ Score Achieved: ${this.score} pts`, {
+      fontSize: `${Math.max(11, Math.round(18 * ts * ms))}px`, color: "#ffffff", backgroundColor: "#18050588",
+      padding: msgPad, align: "center", lineSpacing: Math.max(4, Math.round(8 * ms)),
     }).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
-    const retryBtn = this.add.text(this.scale.width / 2 - 100, this.scale.height / 2 + 115, "🔄  Try Again", {
-      fontSize: "19px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#c0392b", padding: { x: 18, y: 10 },
+    const btnY = H / 2 + Math.round(115 * ms);
+    const btnPad = this.ds.isMobile
+      ? { x: Math.round(14 * ms), y: Math.round(8 * ms) }
+      : { x: 18, y: 10 };
+    const btnFontSize = this.ds.isMobile
+      ? `${Math.max(11, Math.round(19 * ts * ms))}px`
+      : "19px";
+
+    let retryX, menuX;
+    if (this.ds.isMobile) {
+      retryX = W / 2 - cardW / 4;
+      menuX  = W / 2 + cardW / 4;
+    } else {
+      retryX = W / 2 - 100;
+      menuX  = W / 2 + 100;
+    }
+
+    const retryBtn = this.add.text(retryX, btnY, "🔄  Try Again", {
+      fontSize: btnFontSize, fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#c0392b", padding: btnPad,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
     retryBtn.on("pointerdown", () => {
@@ -1707,9 +1843,9 @@ export default class Level1Scene extends Phaser.Scene {
       this.scene.restart();
     });
 
-    const menuBtn = this.add.text(this.scale.width / 2 + 100, this.scale.height / 2 + 115, "🏠  Main Menu", {
-      fontSize: "19px", fontStyle: "bold", color: "#ffffff",
-      backgroundColor: "#424242", padding: { x: 18, y: 10 },
+    const menuBtn = this.add.text(menuX, btnY, "🏠  Main Menu", {
+      fontSize: btnFontSize, fontStyle: "bold", color: "#ffffff",
+      backgroundColor: "#424242", padding: btnPad,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
 
     menuBtn.on("pointerdown", () => {

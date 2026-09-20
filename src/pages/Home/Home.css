@@ -333,3 +333,112 @@
   box-shadow: 0 6px 0 #7b1d00;
 }
 
+/* ─── Mobile Responsive ─────────────────────────── */
+@media (max-width: 600px) {
+  /* HUD corners: shrink & reposition so they don't overlap */
+  .home-hud-corner {
+    width: 140px;
+    height: 52px;
+    top: 10px;
+    padding: 0 10px;
+  }
+
+  .home-hud-left  { left: 8px; }
+  .home-hud-right { right: 8px; }
+
+  .home-hud-icon {
+    font-size: 22px;
+    margin-right: 8px;
+  }
+
+  .home-hud-value {
+    font-size: 20px;
+  }
+
+  .home-hud-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+  }
+
+  /* Title */
+  .overlay h2 {
+    font-size: 24px;
+    letter-spacing: 0px;
+  }
+
+  .overlay h2::before,
+  .overlay h2::after {
+    font-size: 20px;
+    margin: 0 6px;
+  }
+
+  /* Subtitle */
+  .overlay p {
+    font-size: 13px;
+    margin: 4px 10px 6px;
+  }
+
+  /* Temple image */
+  .temple-hero-img {
+    width: 75px;
+    max-height: 75px;
+  }
+
+  /* Festival tag */
+  .festival-tag {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    padding: 3px 14px;
+    margin-bottom: 10px;
+  }
+
+  /* Menu buttons */
+  .menu {
+    gap: 7px;
+    margin-top: 4px;
+  }
+
+  .menu button {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-width: 220px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Footer */
+  .home-footer-credit {
+    font-size: 11px !important;
+    margin-top: 14px !important;
+  }
+
+  /* Modal */
+  .modal-content {
+    padding: 20px 18px;
+    max-width: 95vw;
+    border-radius: 14px;
+  }
+
+  .modal-content h3 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .home-hud-corner {
+    width: 120px;
+    height: 46px;
+  }
+
+  .overlay h2 {
+    font-size: 20px;
+  }
+
+  .menu button {
+    min-width: 180px;
+    font-size: 13px;
+    padding: 9px 16px;
+  }
+}
+
+

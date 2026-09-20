@@ -1,16 +1,22 @@
 .tutorial {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: linear-gradient(#fff3cd, #ffd54f, #ffb74d);
   padding: 30px 20px;
+  padding-top: calc(30px + env(safe-area-inset-top));
+  padding-bottom: calc(30px + env(safe-area-inset-bottom));
+  padding-left: calc(20px + env(safe-area-inset-left));
+  padding-right: calc(20px + env(safe-area-inset-right));
+  overflow-y: auto;
 }
 
 .tutorial-card {
   width: 720px;
-  max-width: 95%;
+  max-width: 100%;
   background: white;
   border-radius: 24px;
   padding: 35px 40px;
@@ -87,10 +93,11 @@
   display: flex;
   gap: 16px;
   margin-top: 30px;
+  flex-wrap: wrap;
 }
 
 .tutorial-start-btn {
-  flex: 2;
+  flex: 2 1 180px;
   padding: 16px;
   border: none;
   border-radius: 40px;
@@ -100,6 +107,7 @@
   font-weight: bold;
   cursor: pointer;
   transition: 0.25s;
+  min-width: 140px;
 }
 
 .tutorial-start-btn:hover {
@@ -107,8 +115,12 @@
   transform: scale(1.03);
 }
 
+.tutorial-start-btn:active {
+  transform: scale(0.98);
+}
+
 .tutorial-back-btn {
-  flex: 1;
+  flex: 1 1 140px;
   padding: 16px;
   border: 2px solid #ffb74d;
   border-radius: 40px;
@@ -118,8 +130,76 @@
   font-weight: bold;
   cursor: pointer;
   transition: 0.25s;
+  min-width: 120px;
 }
 
 .tutorial-back-btn:hover {
   background: #fff3e0;
+}
+
+.tutorial-back-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 600px) {
+  .tutorial-card {
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+
+  .tutorial-card h1 {
+    font-size: 22px;
+    margin-bottom: 18px;
+  }
+
+  .section {
+    margin-bottom: 16px;
+  }
+
+  .section h2 {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .section p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .key-badge {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+
+  .item-pill {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  .tutorial-action-buttons {
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .tutorial-start-btn,
+  .tutorial-back-btn {
+    padding: 13px 16px;
+    font-size: 15px;
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .tutorial-card h1 {
+    font-size: 19px;
+  }
+
+  .section h2 {
+    font-size: 15px;
+  }
+
+  .key-badge {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
 }

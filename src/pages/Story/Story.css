@@ -1,6 +1,7 @@
 .story {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -10,11 +11,16 @@
     #FFF8E1
   );
   padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  padding-left: calc(20px + env(safe-area-inset-left));
+  padding-right: calc(20px + env(safe-area-inset-right));
+  overflow-y: auto;
 }
 
 .story-card {
   width: 680px;
-  max-width: 90%;
+  max-width: 100%;
   background: white;
   padding: 45px;
   border-radius: 24px;
@@ -36,6 +42,7 @@
   border-radius: 50%;
   background: #FFE082;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .story-dot.active {
@@ -67,6 +74,7 @@
   justify-content: center;
   gap: 18px;
   margin-top: 32px;
+  flex-wrap: wrap;
 }
 
 .story-btn-primary {
@@ -79,11 +87,17 @@
   font-weight: 600;
   cursor: pointer;
   transition: 0.25s;
+  flex: 1 1 180px;
+  min-width: 140px;
 }
 
 .story-btn-primary:hover {
   background: #E65100;
   transform: scale(1.05);
+}
+
+.story-btn-primary:active {
+  transform: scale(0.98);
 }
 
 .story-btn-secondary {
@@ -96,8 +110,73 @@
   font-weight: 600;
   cursor: pointer;
   transition: 0.25s;
+  flex: 1 1 180px;
+  min-width: 140px;
 }
 
 .story-btn-secondary:hover {
   background: #FFF3E0;
+}
+
+.story-btn-secondary:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 600px) {
+  .story-card {
+    padding: 28px 20px;
+    border-radius: 18px;
+  }
+
+  .story-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+
+  .story-card h1 {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .story-card p {
+    font-size: 15px;
+    line-height: 1.55;
+    min-height: 60px;
+  }
+
+  .story-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .story-dot.active {
+    width: 26px;
+    border-radius: 6px;
+  }
+
+  .story-buttons {
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .story-btn-primary,
+  .story-btn-secondary {
+    padding: 12px 20px;
+    font-size: 15px;
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .story-card h1 {
+    font-size: 19px;
+  }
+
+  .story-card p {
+    font-size: 14px;
+  }
+
+  .story-icon {
+    font-size: 42px;
+  }
 }

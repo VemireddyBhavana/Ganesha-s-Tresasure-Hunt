@@ -14,10 +14,18 @@ const gameConfig = {
   backgroundColor: "#FFF8DC",
 
   scale: {
-    mode: Phaser.Scale.RESIZE,
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: "100%",
-    height: "100%",
+    width: 1280,
+    height: 720,
+    min: {
+      width: 320,
+      height: 480,
+    },
+    max: {
+      width: 2560,
+      height: 1440,
+    },
   },
 
   physics: {
@@ -30,6 +38,10 @@ const gameConfig = {
 
   dom: {
     createContainer: true,
+  },
+
+  input: {
+    activePointers: 3,
   },
 
   scene: [BootScene, PreloadScene, Level1Scene],

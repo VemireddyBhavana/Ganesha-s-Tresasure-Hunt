@@ -2,16 +2,25 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
   background: #1a0e05;
   font-family: 'Outfit', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent scroll bounce on mobile */
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  /* Fill entire screen including notch areas */
+  width: 100%;
+  height: 100%;
 }
 
 #root {
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 100dvh;
 }
