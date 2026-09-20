@@ -5,8 +5,10 @@
 }
 
 body {
-  background: #fff8e7;
-  font-family: Arial, sans-serif;
+  background: #1a0e05;
+  font-family: 'Outfit', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {

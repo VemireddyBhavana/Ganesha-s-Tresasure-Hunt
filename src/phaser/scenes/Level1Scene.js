@@ -754,7 +754,7 @@ export default class Level1Scene extends Phaser.Scene {
 
     this.add.text(prasadCardX + 12, prasadCardY + 14, "PRASAD", {
       fontSize: "11px", fontStyle: "bold", color: "#ffb74d",
-      letterSpacing: 2,
+      letterSpacing: "2px",
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
     // 2. Top-Left Best Score Card (Reference Game Style)
@@ -781,7 +781,7 @@ export default class Level1Scene extends Phaser.Scene {
 
     this.add.text(bestCardX + 12, bestCardY + 14, "BEST SCORE", {
       fontSize: "11px", fontStyle: "bold", color: "#ffb74d",
-      letterSpacing: 2,
+      letterSpacing: "2px",
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
     // 3. Top-Center Offerings Quest Dock

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTopScores } from "../../firebase/leaderboard";
+import templeImg from "../../assets/images/environment/temple.png";
 import "./Home.css";
 
 function requestFullscreenSafe() {
@@ -88,7 +89,9 @@ function Home() {
       <HudCard side="right" icon="🏆" value={best} label="BEST SCORE" />
 
       <div className="overlay">
-        <h1>🛕</h1>
+        <div className="temple-hero-container">
+          <img src={templeImg} alt="Sacred Temple" className="temple-hero-img" />
+        </div>
         <h2>Ganesha&apos;s Treasure Hunt</h2>
         <p>The Sacred Modak Quest</p>
         <div className="festival-tag">✦  GANESH CHATURTHI SPECIAL  ✦</div>
@@ -157,6 +160,14 @@ function Home() {
                     <p style={{ textAlign: "center", color: "#888", padding: "12px" }}>
                       ⏳ Loading Devotee Scores...
                     </p>
+                  ) : leaderboardScores.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "20px 10px", color: "#6d4c41" }}>
+                      <p style={{ fontSize: "28px", margin: "0 0 8px" }}>🛕</p>
+                      <p style={{ fontWeight: 600, fontSize: "15px" }}>No scores recorded yet!</p>
+                      <p style={{ fontSize: "13px", color: "#8d6e63", marginTop: "4px" }}>
+                        Play a quest and collect sacred offerings to claim the #1 spot!
+                      </p>
+                    </div>
                   ) : (
                     leaderboardScores.map((entry, idx) => {
                       const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}.`;

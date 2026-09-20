@@ -5,13 +5,21 @@ import gameConfig from "../../phaser/config";
 
 function GameCanvas() {
   const gameRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    if (!gameRef.current) {
-      gameRef.current = new Phaser.Game(gameConfig);
-    }
+    // Small delay ensures the DOM container is fully mounted before Phaser attaches
+    const timeoutId = setTimeout(() => {
+      if (!gameRef.current && containerRef.current) {
+        gameRef.current = new Phaser.Game({
+          ...gameConfig,
+          parent: containerRef.current,
+        });
+      }
+    }, 0);
 
     return () => {
+      clearTimeout(timeoutId);
       if (gameRef.current) {
         gameRef.current.destroy(true);
         gameRef.current = null;
@@ -19,7 +27,7 @@ function GameCanvas() {
     };
   }, []);
 
-  return <div id="game-container"></div>;
+  return <div id="game-container" ref={containerRef}></div>;
 }
 
 export default GameCanvas;

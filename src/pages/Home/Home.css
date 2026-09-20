@@ -2,14 +2,9 @@
   width: 100%;
   height: 100vh;
 
-  background: linear-gradient(
-    180deg,
-    #4d1c00 0%,
-    #7b2f04 20%,
-    #a84506 45%,
-    #d85f0a 75%,
-    #ff8f1a 100%
-  );
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(77, 28, 0, 0.78) 0%, rgba(20, 10, 4, 0.94) 100%),
+    url("../../assets/images/backgrounds/temple_garden.png") center/cover no-repeat;
 
   display: flex;
   justify-content: center;
@@ -24,9 +19,9 @@
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 15% 25%, rgba(255, 200, 100, 0.25) 0%, transparent 35%),
-    radial-gradient(circle at 85% 15%, rgba(255, 230, 150, 0.2) 0%, transparent 30%),
-    radial-gradient(circle at 50% 90%, rgba(255, 120, 50, 0.2) 0%, transparent 40%);
+    radial-gradient(circle at 15% 25%, rgba(255, 200, 100, 0.2) 0%, transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(255, 230, 150, 0.15) 0%, transparent 30%),
+    radial-gradient(circle at 50% 90%, rgba(255, 120, 50, 0.18) 0%, transparent 40%);
   pointer-events: none;
 }
 
@@ -125,19 +120,48 @@
   text-align: center;
   z-index: 10;
   position: relative;
-  padding: 20px;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.overlay h1 {
-  font-size: 82px;
-  line-height: 1;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+.temple-hero-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.temple-hero-img {
+  width: 105px;
+  height: auto;
+  max-height: 105px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.65))
+          drop-shadow(0 0 26px rgba(255, 215, 0, 0.55));
+  animation: floatTemple 3.2s ease-in-out infinite alternate;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@keyframes floatTemple {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 22px rgba(255, 200, 60, 0.45));
+  }
+  100% {
+    transform: translateY(-5px) scale(1.02);
+    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 35px rgba(255, 225, 60, 0.8));
+  }
 }
 
 .overlay h2 {
-  font-size: 58px;
+  font-size: 42px;
   color: #fff8dc;
-  margin-top: 8px;
+  margin-top: 2px;
   text-shadow:
     0 3px 0 #4d1c00,
     0 6px 18px rgba(0, 0, 0, 0.6),
@@ -149,14 +173,15 @@
 .overlay h2::after {
   content: "🍃";
   display: inline-block;
-  margin: 0 14px;
+  margin: 0 12px;
   color: #7cb342;
-  transform: translateY(-4px);
+  transform: translateY(-3px);
+  font-size: 32px;
 }
 
 .overlay p {
-  margin: 16px 20px 20px;
-  font-size: 22px;
+  margin: 6px 20px 8px;
+  font-size: 17px;
   color: #fff3e0;
   font-weight: 600;
   letter-spacing: 1px;
@@ -165,42 +190,42 @@
 
 .festival-tag {
   display: inline-block;
-  padding: 6px 28px;
+  padding: 4px 22px;
   background: linear-gradient(90deg, #4d1c00, #7b2f04, #4d1c00);
   color: #ffd700;
   border: 2px solid #ffd700;
   border-radius: 30px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 4px;
-  margin-top: 8px;
-  margin-bottom: 22px;
+  letter-spacing: 3px;
+  margin-top: 4px;
+  margin-bottom: 14px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 10px;
+  gap: 9px;
+  margin-top: 2px;
   align-items: center;
 }
 
 .menu button {
-  padding: 18px 60px;
-  font-size: 20px;
+  padding: 12px 48px;
+  font-size: 17px;
   font-weight: 800;
   border: none;
-  border-radius: 16px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #ff8f1a 0%, #e65100 100%);
   color: white;
   cursor: pointer;
   transition: 0.2s;
-  min-width: 280px;
+  min-width: 260px;
   letter-spacing: 1px;
   box-shadow:
-    0 6px 0 #8a2e00,
-    0 10px 24px rgba(0, 0, 0, 0.45);
+    0 5px 0 #8a2e00,
+    0 8px 20px rgba(0, 0, 0, 0.4);
   border-top: 2px solid rgba(255, 255, 255, 0.3);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
