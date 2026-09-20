@@ -404,12 +404,11 @@ export default class Level1Scene extends Phaser.Scene {
   getDeviceScale() {
     try {
       const vw = window.innerWidth || 1280;
-      const vh = window.innerHeight || 720;
       if (vw <= 420) return { card: 0.56, dock: 0.52, text: 0.7, pad: 0.72, modal: 0.7, isMobile: true };
       if (vw <= 560) return { card: 0.68, dock: 0.64, text: 0.8, pad: 0.82, modal: 0.8, isMobile: true };
       if (vw <= 768) return { card: 0.82, dock: 0.78, text: 0.9, pad: 0.92, modal: 0.9, isMobile: true };
       return { card: 1, dock: 1, text: 1, pad: 1, modal: 1, isMobile: false };
-    } catch (e) {
+    } catch {
       return { card: 1, dock: 1, text: 1, pad: 1, modal: 1, isMobile: false };
     }
   }
@@ -423,7 +422,6 @@ export default class Level1Scene extends Phaser.Scene {
     this.ds = this.getDeviceScale();
 
     const W = this.scale.width;
-    const H = this.scale.height;
 
     // Game state
     this.score          = 0;
@@ -923,7 +921,6 @@ export default class Level1Scene extends Phaser.Scene {
   //  TOUCH D-PAD CONTROLS (Responsive)
   // ═══════════════════════════════════════════
   createTouchControls() {
-    const W = this.scale.width;
     const H = this.scale.height;
     const ps = this.ds.pad;
     const ts = this.ds.text;
@@ -1739,7 +1736,6 @@ export default class Level1Scene extends Phaser.Scene {
     const btnPad = this.ds.isMobile
       ? { x: Math.round(10 * ms), y: Math.round(8 * ms) }
       : { x: 14, y: 10 };
-    const xOffset = this.ds.isMobile ? null : 150;
     const createBtn = (label, xIdx, bgHex, onClick) => {
       let bx;
       if (this.ds.isMobile) {

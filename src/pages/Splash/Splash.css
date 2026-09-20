@@ -91,6 +91,11 @@
   box-shadow: 0 8px 0 #8a2e00, 0 14px 30px rgba(0, 0, 0, 0.5);
 }
 
+.splash-start-btn:active {
+  transform: translateY(3px) scale(0.98);
+  box-shadow: 0 3px 0 #8a2e00, 0 5px 14px rgba(0, 0, 0, 0.4);
+}
+
 /* ─── Mobile Responsive ─────────────────────────── */
 @media (max-width: 480px) {
   .splash-temple-img {
