@@ -1,16 +1,110 @@
-# React + Vite
+# 🛕 Ganesha's Treasure Hunt
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Ganesha's Treasure Hunt** is a 2D top-down adventure game developed for the **Ganesh Chaturthi Game Design Contest 2026** using **React, Vite, and Phaser 3**.
 
-Currently, two official plugins are available:
+## 🌟 Game Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The game takes place in a beautiful temple garden during the Ganesh Chaturthi festival.
 
-## React Compiler
+Players take on the role of a festival volunteer whose mission is to collect all the sacred offerings scattered around the temple. After collecting every offering, the temple unlocks and the player must reach the temple entrance to complete the level before the timer runs out.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🎮 Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- 🛕 Temple Garden themed environment
+- 🚶 Smooth player movement
+- 🎥 Camera follow system
+- 🌸 Sacred collectible items
+- ⭐ Score system
+- ❤️ Lives system
+- ⏱ Countdown timer
+- 📋 Mission tracker
+- 🪨 Obstacles and collision detection
+- ✨ Collect animations and effects
+- 🔓 Temple unlock sequence
+- 🏆 Victory screen
+- ⏸ Pause menu
+- 🔊 Sound toggle
+- 📱 Responsive gameplay
+
+---
+
+## 🌸 Sacred Collectibles
+
+| Collectible | Points |
+|-------------|--------|
+| 🌸 Flower | 10 |
+| 🌿 Durva Grass | 15 |
+| 🍬 Modak | 20 |
+| 🥥 Coconut | 25 |
+| 🪔 Diya | 30 |
+
+---
+
+## 🕹 Controls
+
+| Action | Keyboard |
+|--------|----------|
+| Move Up | W / ↑ |
+| Move Down | S / ↓ |
+| Move Left | A / ← |
+| Move Right | D / → |
+| Pause | Esc |
+
+---
+
+## 🛠 Tech Stack
+
+- React.js
+- Vite
+- Phaser 3
+- JavaScript
+- CSS3
+- Git & GitHub
+
+---
+
+## 📂 Project Structure
+
+```text
+Ganesha's Treasure Hunt/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── scenes/
+│   ├── components/
+│   ├── router/
+│   └── App.jsx
+├── package.json
+├── vite.config.js
+└── README.md
+```
+
+---
+
+## 🚀 Getting Started
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+Open your browser:
+
+```
+http://localhost:5173
+```
+
+
+
+## 🙏 Ganpati Bappa Morya!
+
+**Collect every sacred offering, unlock the temple, and complete the divine adventure.**
