@@ -1532,8 +1532,8 @@ export default class Level1Scene extends Phaser.Scene {
     ).setScrollFactor(0).setDepth(600);
 
     // Card background
-    const cardW = 560;
-    const cardH = 540;
+    const cardW = 580;
+    const cardH = 560;
     const card = this.add.rectangle(
       this.scale.width / 2, this.scale.height / 2, cardW, cardH, 0x23140a, 0.97
     ).setScrollFactor(0).setDepth(650);
@@ -1541,9 +1541,9 @@ export default class Level1Scene extends Phaser.Scene {
 
     // Title
     const titleText = this.add.text(
-      this.scale.width / 2, this.scale.height / 2 - 215,
+      this.scale.width / 2, this.scale.height / 2 - 225,
       "🏆 LEVEL COMPLETE! 🏆", {
-        fontSize: "30px", fontStyle: "bold", color: "#ffd700",
+        fontSize: "28px", fontStyle: "bold", color: "#ffd700",
         stroke: "#3d1f00", strokeThickness: 5,
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0.2);
@@ -1552,24 +1552,11 @@ export default class Level1Scene extends Phaser.Scene {
       targets: titleText, scale: 1, duration: 450, ease: "Back.easeOut",
     });
 
-    // Sacred Blessing Banner
-    const blessingText = stars === 3
-      ? "🙏 Ganpati Bappa Morya! 🙏\nMay Lord Ganesha bless you with wisdom,\npeace, and auspicious new beginnings."
-      : "🙏 Ganpati Bappa Morya! 🙏\nThe sacred offerings have been placed.\nLord Ganesha accepts your devotion.";
-    const blessingLabel = this.add.text(
-      this.scale.width / 2, this.scale.height / 2 - 162, blessingText, {
-        fontSize: "13px", fontStyle: "italic", color: "#ffe0b2",
-        stroke: "#2a1000", strokeThickness: 2,
-        backgroundColor: "#3e1a00aa", padding: { x: 14, y: 6 },
-        align: "center",
-      }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setAlpha(0);
-    this.tweens.add({ targets: blessingLabel, alpha: 1, duration: 900, delay: 500 });
-
-    // Subtitle
+    // Subtitle (Star Title)
     this.add.text(
-      this.scale.width / 2, this.scale.height / 2 - 170, starTitle, {
-        fontSize: "19px", fontStyle: "bold", color: "#ffecb3",
+      this.scale.width / 2, this.scale.height / 2 - 175, starTitle, {
+        fontSize: "18px", fontStyle: "bold", color: "#ffecb3",
+        stroke: "#3d1f00", strokeThickness: 3,
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
@@ -1578,14 +1565,28 @@ export default class Level1Scene extends Phaser.Scene {
     for (let i = 0; i < 3; i++) {
       const isEarned = i < stars;
       const s = this.add.text(
-        this.scale.width / 2 + (i - 1) * starSpacing, this.scale.height / 2 - 120,
-        isEarned ? "⭐" : "☆", { fontSize: "40px", color: isEarned ? "#ffd700" : "#757575" }
+        this.scale.width / 2 + (i - 1) * starSpacing, this.scale.height / 2 - 128,
+        isEarned ? "⭐" : "☆", { fontSize: "38px", color: isEarned ? "#ffd700" : "#757575" }
       ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setScale(0);
 
       this.tweens.add({
         targets: s, scale: 1, duration: 350, delay: 200 + i * 180, ease: "Back.easeOut",
       });
     }
+
+    // Sacred Blessing Banner
+    const blessingText = stars === 3
+      ? "🙏 Ganpati Bappa Morya! 🙏\nMay Lord Ganesha bless you with wisdom, peace & auspicious beginnings."
+      : "🙏 Ganpati Bappa Morya! 🙏\nThe sacred offerings have been placed. Lord Ganesha accepts your devotion.";
+    const blessingLabel = this.add.text(
+      this.scale.width / 2, this.scale.height / 2 - 68, blessingText, {
+        fontSize: "12px", fontStyle: "italic", color: "#ffe0b2",
+        stroke: "#2a1000", strokeThickness: 2,
+        backgroundColor: "#3e1a00cc", padding: { x: 16, y: 7 },
+        align: "center", lineSpacing: 4,
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setAlpha(0);
+    this.tweens.add({ targets: blessingLabel, alpha: 1, duration: 800, delay: 400 });
 
     // Stats Breakdown
     const statsText =
@@ -1596,19 +1597,19 @@ export default class Level1Scene extends Phaser.Scene {
       `🏆 TOTAL SCORE: ${finalScore} pts`;
 
     this.add.text(
-      this.scale.width / 2, this.scale.height / 2 + 5, statsText, {
-        fontSize: "16px", color: "#ffffff",
-        backgroundColor: "#160b05aa", padding: { x: 20, y: 12 },
-        align: "center", lineSpacing: 6,
+      this.scale.width / 2, this.scale.height / 2 + 25, statsText, {
+        fontSize: "15px", color: "#ffffff",
+        backgroundColor: "#160b05ee", padding: { x: 22, y: 10 },
+        align: "center", lineSpacing: 5,
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(700);
 
     // Player Name Prompt & Save to Leaderboard
     let enteredName = localStorage.getItem("ganesha_last_player_name") || "";
     const nameLabel = this.add.text(
-      this.scale.width / 2, this.scale.height / 2 + 105,
-      enteredName ? `Devotee: ${enteredName}` : "Tap here to set your Leaderboard Name", {
-        fontSize: "15px", fontStyle: "bold", color: "#ffd700",
+      this.scale.width / 2, this.scale.height / 2 + 126,
+      enteredName ? `👤 Devotee: ${enteredName} (Tap to edit)` : "✏️ Tap here to set your Leaderboard Name", {
+        fontSize: "14px", fontStyle: "bold", color: "#ffd700",
         backgroundColor: "#3e2723", padding: { x: 16, y: 6 },
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(700).setInteractive({ useHandCursor: true });
@@ -1618,7 +1619,7 @@ export default class Level1Scene extends Phaser.Scene {
       if (inputName && inputName.trim()) {
         enteredName = inputName.trim().slice(0, 24);
         localStorage.setItem("ganesha_last_player_name", enteredName);
-        nameLabel.setText(`Devotee: ${enteredName}`);
+        nameLabel.setText(`👤 Devotee: ${enteredName} (Tap to edit)`);
         saveScore(enteredName, finalScore, stars, this.timeLeft);
       }
     });
@@ -1633,7 +1634,7 @@ export default class Level1Scene extends Phaser.Scene {
     } catch (e) {}
 
     // Action Buttons
-    const btnY = this.scale.height / 2 + 175;
+    const btnY = this.scale.height / 2 + 192;
     const createBtn = (label, xOffset, bgHex, onClick) => {
       const btn = this.add.text(this.scale.width / 2 + xOffset, btnY, label, {
         fontSize: "16px", fontStyle: "bold", color: "#ffffff",
