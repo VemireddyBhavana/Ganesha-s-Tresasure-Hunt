@@ -1,17 +1,9 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import templeImg from "../../assets/images/environment/temple.png";
 import "./Splash.css";
 
 function Splash() {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigate("/home");
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [navigate]);
 
   return (
     <div className="splash">
